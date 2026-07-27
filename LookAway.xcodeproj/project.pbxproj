@@ -11,6 +11,7 @@
 		A100000000000002 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000000000002 /* Config.swift */; };
 		A100000000000011 /* BreakStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000000000011 /* BreakStats.swift */; };
 		A100000000000012 /* MenuBarWindowDismisser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000000000012 /* MenuBarWindowDismisser.swift */; };
+		A100000000000016 /* MenuBarWindowBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000000000016 /* MenuBarWindowBackground.swift */; };
 		A100000000000013 /* BreakInputShield.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000000000013 /* BreakInputShield.swift */; };
 		A100000000000003 /* ConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000000000003 /* ConfigManager.swift */; };
 		A100000000000004 /* TimerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000000000004 /* TimerEngine.swift */; };
@@ -31,6 +32,7 @@
 		A200000000000002 /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		A200000000000011 /* BreakStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakStats.swift; sourceTree = "<group>"; };
 		A200000000000012 /* MenuBarWindowDismisser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarWindowDismisser.swift; sourceTree = "<group>"; };
+		A200000000000016 /* MenuBarWindowBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarWindowBackground.swift; sourceTree = "<group>"; };
 		A200000000000013 /* BreakInputShield.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakInputShield.swift; sourceTree = "<group>"; };
 		A200000000000003 /* ConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigManager.swift; sourceTree = "<group>"; };
 		A200000000000004 /* TimerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerEngine.swift; sourceTree = "<group>"; };
@@ -106,6 +108,7 @@
 				A200000000000005 /* MicrophoneMonitor.swift */,
 				A200000000000006 /* SleepWakeMonitor.swift */,
 				A200000000000012 /* MenuBarWindowDismisser.swift */,
+				A200000000000016 /* MenuBarWindowBackground.swift */,
 				A200000000000013 /* BreakInputShield.swift */,
 				A200000000000007 /* LaunchAtLoginManager.swift */,
 			);
@@ -193,6 +196,7 @@
 				A100000000000002 /* Config.swift in Sources */,
 				A100000000000011 /* BreakStats.swift in Sources */,
 				A100000000000012 /* MenuBarWindowDismisser.swift in Sources */,
+				A100000000000016 /* MenuBarWindowBackground.swift in Sources */,
 				A100000000000013 /* BreakInputShield.swift in Sources */,
 				A100000000000003 /* ConfigManager.swift in Sources */,
 				A100000000000004 /* TimerEngine.swift in Sources */,
@@ -256,7 +260,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.dvdcarlomagno.lookaway;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -278,7 +282,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.dvdcarlomagno.lookaway;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

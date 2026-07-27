@@ -82,7 +82,7 @@ final class ConfigManager: ObservableObject {
             queue: .main
         )
         source.setEventHandler { [weak self] in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.reload()
             }
         }

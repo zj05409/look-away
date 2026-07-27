@@ -21,7 +21,6 @@ final class TimerEngine: ObservableObject {
     /// Lightweight menu-bar fields — only published when their values change.
     @Published private(set) var menuBarCompactText: String = ""
     @Published private(set) var menuBarSymbol: String = "eyes"
-    @Published private(set) var consecutiveBreaks: Int = 0
     @Published private(set) var pendingPenaltyMinutes: Int = 0
     @Published private(set) var appliedPenaltyMinutes: Int = 0
 
@@ -168,7 +167,7 @@ final class TimerEngine: ObservableObject {
         )
     }
 
-    /// Ends the current break early — breaks streak and adds penalty to the next break.
+    /// Ends the current break early — adds penalty minutes to the next break.
     func abortBreakEarly() {
         guard phase == .onBreak else { return }
         recordEarlyAbort()
@@ -240,15 +239,13 @@ final class TimerEngine: ObservableObject {
         restartWorkSessionAfterLongAway()
     }
 
-    /// Away long enough to count as a break — restart work, record streak, dismiss overlay if needed.
+    /// Away long enough to count as a break — restart work and dismiss overlay if needed.
     private func restartWorkSessionAfterLongAway() {
         let wasOnBreak = phase == .onBreak
 
         if wasOnBreak {
             appliedPenaltyMinutes = 0
         }
-
-        recordNaturalCompletion()
 
         phase = .working
         internalRemaining = config.workDurationSeconds
@@ -268,7 +265,7 @@ final class TimerEngine: ObservableObject {
         tickTimer?.invalidate()
         lastTickDate = Date()
         let timer = Timer(fire: Date(), interval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.tick()
             }
         }
@@ -383,7 +380,6 @@ final class TimerEngine: ObservableObject {
     }
 
     private func endBreak() {
-        recordNaturalCompletion()
         transitionToWorkingAfterBreak()
     }
 
@@ -399,27 +395,14 @@ final class TimerEngine: ObservableObject {
     }
 
     private func loadBreakStats() {
-        let stats = BreakStatsStore.load()
-        consecutiveBreaks = stats.consecutiveBreaks
-        pendingPenaltyMinutes = stats.pendingPenaltyMinutes
+        pendingPenaltyMinutes = BreakStatsStore.load().pendingPenaltyMinutes
     }
 
     private func persistBreakStats() {
-        BreakStatsStore.save(
-            BreakStats(
-                consecutiveBreaks: consecutiveBreaks,
-                pendingPenaltyMinutes: pendingPenaltyMinutes
-            )
-        )
-    }
-
-    private func recordNaturalCompletion() {
-        consecutiveBreaks += 1
-        persistBreakStats()
+        BreakStatsStore.save(BreakStats(pendingPenaltyMinutes: pendingPenaltyMinutes))
     }
 
     private func recordEarlyAbort() {
-        consecutiveBreaks = 0
         if config.skipPenaltyMinutes > 0 {
             pendingPenaltyMinutes += config.skipPenaltyMinutes
         }

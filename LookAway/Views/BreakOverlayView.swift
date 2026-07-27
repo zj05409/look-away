@@ -19,8 +19,6 @@ struct BreakOverlayView: View {
                 Spacer(minLength: 0)
 
                 VStack(spacing: 20) {
-                    overlayStreakBadge
-
                     timerDisplay
 
                     Text("Look Away")
@@ -35,23 +33,6 @@ struct BreakOverlayView: View {
             }
             .padding(.horizontal, 32)
         }
-    }
-
-    private var overlayStreakBadge: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(engine.consecutiveBreaks > 0 ? LookAwayBrand.accent : .white.opacity(0.35))
-
-            Text("\(engine.consecutiveBreaks)")
-                .font(.system(.body, design: .rounded, weight: .semibold))
-                .monospacedDigit()
-                .foregroundStyle(engine.consecutiveBreaks > 0 ? .white.opacity(0.92) : .white.opacity(0.4))
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 7)
-        .lookAwayOverlayCapsule()
-        .accessibilityLabel("\(engine.consecutiveBreaks) consecutive breaks")
     }
 
     private var timerDisplay: some View {
@@ -100,29 +81,8 @@ private struct LookAwayOverlayTimerGlass: ViewModifier {
     }
 }
 
-private struct LookAwayOverlayCapsuleGlass: ViewModifier {
-    func body(content: Content) -> some View {
-        #if LIQUID_GLASS
-        content.glassEffect(
-            .regular.tint(LookAwayBrand.accent.opacity(0.1)),
-            in: .capsule
-        )
-        #else
-        content
-            .background {
-                Capsule(style: .continuous)
-                    .fill(Color.white.opacity(0.06))
-            }
-        #endif
-    }
-}
-
 private extension View {
     func lookAwayOverlayTimerGlass() -> some View {
         modifier(LookAwayOverlayTimerGlass())
-    }
-
-    func lookAwayOverlayCapsule() -> some View {
-        modifier(LookAwayOverlayCapsuleGlass())
     }
 }

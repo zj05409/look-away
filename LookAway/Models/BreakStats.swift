@@ -1,8 +1,21 @@
 import Foundation
 
 struct BreakStats: Codable, Equatable {
-    var consecutiveBreaks: Int = 0
     var pendingPenaltyMinutes: Int = 0
+
+    enum CodingKeys: String, CodingKey {
+        case pendingPenaltyMinutes
+    }
+
+    init(pendingPenaltyMinutes: Int = 0) {
+        self.pendingPenaltyMinutes = pendingPenaltyMinutes
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        // Ignore legacy `consecutiveBreaks` if present in older stats.json files.
+        pendingPenaltyMinutes = try container.decodeIfPresent(Int.self, forKey: .pendingPenaltyMinutes) ?? 0
+    }
 }
 
 enum BreakStatsStore {

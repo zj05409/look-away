@@ -18,7 +18,7 @@ final class BreakOverlayController: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.showOverlay()
             }
         }
@@ -28,7 +28,7 @@ final class BreakOverlayController: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.hideOverlay()
             }
         }
@@ -38,7 +38,7 @@ final class BreakOverlayController: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 guard let self, !self.panels.isEmpty else { return }
                 self.hideOverlay()
                 self.showOverlay()
@@ -116,7 +116,7 @@ final class BreakOverlayController: ObservableObject {
     private func startKeepFrontTimer() {
         stopKeepFrontTimer()
         keepFrontTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 guard let self, !self.panels.isEmpty else { return }
                 for panel in self.panels {
                     panel.orderFrontRegardless()

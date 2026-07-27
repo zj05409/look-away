@@ -28,7 +28,7 @@ final class MicrophoneMonitor: ObservableObject {
         )
 
         let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.attachInputDeviceListeners()
             }
         }
@@ -58,7 +58,7 @@ final class MicrophoneMonitor: ObservableObject {
             )
 
             let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
-                Task { @MainActor in
+                Task { @MainActor [weak self] in
                     self?.refreshMicState()
                 }
             }

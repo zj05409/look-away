@@ -3,25 +3,36 @@
 A native macOS menu bar app that reminds you to step away from the screen on a repeating timer. When a work interval ends, a full-screen black break overlay covers all displays until the break finishes—or you end it early with deliberate friction.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Build](https://github.com/dvdcarlomagno/look-away/actions/workflows/build.yml/badge.svg)](https://github.com/dvdcarlomagno/look-away/actions/workflows/build.yml)
+
+## Download (no build required)
+
+Every commit to `main` publishes a macOS app zip on the **[Latest release](https://github.com/dvdcarlomagno/look-away/releases/latest)**.
+
+1. Download **[LookAway.app.zip](https://github.com/dvdcarlomagno/look-away/releases/latest/download/LookAway.app.zip)**
+2. Unzip
+3. Drag `LookAway.app` into **Applications**
+4. First open: right-click → **Open** if macOS Gatekeeper blocks the unsigned build
+
+Versioned releases (tags like `v1.1.0`) keep older builds under [Releases](https://github.com/dvdcarlomagno/look-away/releases). CI also attaches the zip to each [Actions run](https://github.com/dvdcarlomagno/look-away/actions/workflows/build.yml).
 
 ## Features
 
 - Menu bar countdown timer with phase icon
-- **Break streak** — consecutive completed breaks shown with a flame icon; skipping resets the streak
 - **Skip penalty** — ending a break early adds extra minutes to your next break (configurable)
-- Configurable work and break durations in the menu bar **Settings** panel (saved to `~/.config/look-away/config.json`)
+- Work and break durations via `~/.config/look-away/config.json` (live reload while the app is running)
 - Full-screen **black break overlay** on all monitors — minimal UI, keyboard focus captured
 - Break overlay hardening — shielding window level, blocked shortcuts (⌘Q, ⌘W, ⌘Tab, Esc), menu bar disabled during breaks
 - Skips breaks while the microphone is in use (calls/meetings) — checks **all** input devices, not just the system default
-- Pauses while the display is off, the Mac is asleep, or the screen is locked; **resumes** where you left off on a short return, **restarts the work timer** (and counts the break streak) when away time reaches the configured break duration (manual pause always resumes)
-- Launch at login (toggle in Settings)
+- Pauses while the display is off, the Mac is asleep, or the screen is locked; **resumes** where you left off on a short return, **restarts the work timer** when away time reaches the configured break duration (manual pause always resumes)
+- **Launch at login** — prompted on first launch (default: enable); change later in System Settings → General → Login Items, or set `launchAtLogin` in `config.json`
 - Pre-break warning notification (optional, off by default) with **Extend 3 minutes** action in the notification and menu bar
 - Native Liquid Glass UI on macOS 26 via SwiftUI `glassEffect` (material fallback on older macOS / SDKs)
 
 ## Design
 
-- **Single accent color** — warm pink (`LookAwayBrand.accent`) used across the menu panel, streak badge, and break overlay glass tints
-- **Menu panel** — one outer liquid-glass shell; inner buttons and settings rows use subtle fills (no nested glass) to avoid double-corner artifacts
+- **Single accent color** — warm pink (`LookAwayBrand.accent`) used across the menu panel and break overlay glass tints
+- **Menu panel** — one outer liquid-glass shell over a clear MenuBarExtra window (avoids double-corner artifacts); inner buttons use subtle fills (no nested glass)
 - **Break overlay** — true black background, no photo backgrounds or earthy palette
 
 ## Requirements
@@ -52,9 +63,31 @@ Build and run:
 open build/LookAway.app
 ```
 
-This compiles with `swiftc`, wraps the binary in a `.app` bundle, generates the pink **eyes** app icon, and ad-hoc signs it for local use. The build script probes the SDK and prints whether Liquid Glass is enabled.
+This compiles with `swiftc`, wraps the binary in a `.app` bundle, generates the pink **eyes** app icon, ad-hoc signs it for local use, and writes `build/LookAway-<version>-<sha>.zip`. The build script probes the SDK and prints whether Liquid Glass is enabled.
 
 If macOS blocks the first launch, right-click the app → **Open**.
+
+## Versioning & CI
+
+| Piece | Role |
+|-------|------|
+| [`VERSION`](VERSION) | Marketing semver (`CFBundleShortVersionString`), e.g. `1.1.0` |
+| Git commit count | `CFBundleVersion` (monotonic build number) |
+| Tag `v1.1.0` | Versioned GitHub Release with a downloadable zip |
+| Push to `main` | Rebuilds and updates the rolling **Latest** release |
+
+**Cut a versioned release**
+
+1. Bump the `VERSION` file (and `CFBundleShortVersionString` in `LookAway/Info.plist` if you edit it by hand — `build.sh` overwrites it from `VERSION`).
+2. Commit on `main`.
+3. Tag and push:
+
+```bash
+git tag v1.1.0
+git push origin v1.1.0
+```
+
+CI builds on the tag and publishes a GitHub Release with `LookAway.app.zip`.
 
 ## Build with Xcode (optional)
 
@@ -68,7 +101,10 @@ For Liquid Glass in Xcode, add `LIQUID_GLASS` to **Active Compilation Conditions
 
 ## First launch
 
-On first launch, the app creates `~/.config/look-away/config.json` with defaults:
+On first launch the app:
+
+1. Creates `~/.config/look-away/config.json` with defaults (if missing)
+2. Asks whether to **Open at Login** (default button enables it)
 
 ```json
 {
@@ -80,7 +116,7 @@ On first launch, the app creates `~/.config/look-away/config.json` with defaults
 }
 ```
 
-Break streak data is stored separately in `~/.config/look-away/stats.json`.
+Skip-penalty state is stored separately in `~/.config/look-away/stats.json`.
 
 Copy values from [`config.example.json`](config.example.json) if you prefer to start from the repo template.
 
@@ -92,22 +128,19 @@ Copy values from [`config.example.json`](config.example.json) if you prefer to s
 | `breakDurationMinutes` | `15` | Break overlay duration |
 | `preBreakWarningMinutes` | `0` | Minutes before break to notify (`0` = off) |
 | `skipPenaltyMinutes` | `5` | Extra minutes added to the next break after an early skip (`0` = off) |
-| `launchAtLogin` | `true` | Register app at login |
+| `launchAtLogin` | `true` | Register app at login (also set by the first-launch prompt) |
 
-Edit the file while the app is running—it reloads automatically. Changes made in the menu bar settings panel write to the same file immediately.
+Edit the file while the app is running—it reloads automatically. After the first-launch prompt, changing `launchAtLogin` in the file updates the login item.
 
 ## Menu bar controls
 
 - **Pause / Resume** — manual timer pause (single tap)
 - **Extend 3 min** — shown during the pre-break warning; adds 3 minutes to the work session (also available as a notification action)
-- **Restart** — hold **11 seconds** to reset the work timer; during a break, same hold ends the break early (streak + penalty apply)
+- **Restart** — hold **11 seconds** to reset the work timer; during a break, same hold ends the break early (penalty applies)
 - **Break / Skip** — start a break, or hold **Skip** for **11 seconds** during a break to end early
-- **Settings** — edit work/break intervals, launch at login; reveal `config.json` for advanced options
 - **Quit** — disabled while a break is active
 
 The menu bar panel closes automatically when a break starts. The menu bar icon is dimmed and disabled during breaks.
-
-Interval fields support +/- steppers and direct numeric entry (press Return to apply).
 
 ## Break overlay
 
@@ -115,7 +148,6 @@ When a break starts, a full-screen **true black** overlay covers every connected
 
 | Element | Description |
 |---------|-------------|
-| Streak badge | Flame icon + consecutive completed breaks (top of center stack) |
 | Countdown | **Bold** timer with pink-tinted liquid glass pill |
 | Title | **Look Away** below the timer |
 | Skip | Faint hold-to-skip control at the bottom (~20% opacity, hold **11 seconds**) |
@@ -130,7 +162,7 @@ The overlay uses a shielding window level, captures keyboard focus, and blocks c
 LookAwayApp (MenuBarExtra)
     └── AppViewModel
             ├── ConfigManager           → ~/.config/look-away/config.json
-            ├── TimerEngine             → work / break / pause phases, streak & penalty
+            ├── TimerEngine             → work / break / pause phases & skip penalty
             ├── MicrophoneMonitor       → skip breaks during calls
             ├── SleepWakeMonitor        → pause while away; long return restarts work timer
             └── BreakOverlayController  → full-screen black NSPanel per display
@@ -139,13 +171,14 @@ LookAwayApp (MenuBarExtra)
 
 | Component | Role |
 |-----------|------|
-| `TimerEngine` | Core countdown logic, phase transitions, streak/penalty, menu bar label updates |
+| `TimerEngine` | Core countdown logic, phase transitions, skip penalty, menu bar label updates |
 | `BreakOverlayController` | Multi-display panels, keep-front timer |
-| `BreakOverlayView` | Black overlay UI — streak, glass timer, title, skip |
+| `BreakOverlayView` | Black overlay UI — glass timer, title, skip |
 | `BreakInputShield` | Local/global event monitors for blocked shortcuts during breaks |
-| `BreakStats` / `stats.json` | Persists consecutive break streak and pending skip penalty |
+| `BreakStats` / `stats.json` | Persists pending skip penalty |
 | `GlassStyles` / `LookAwayDesign` | Pink accent tokens, `LookAwayGlassPanel`, liquid glass helpers |
 | `ConfigManager` | JSON persistence with file watcher for live reload |
+| `LaunchAtLoginManager` | First-launch prompt + `SMAppService` registration |
 
 ## App icon
 
@@ -171,10 +204,10 @@ killall Dock
 
 ## Skipping vs completing a break
 
-| Action | Streak | Next break penalty |
-|--------|--------|-------------------|
-| Complete break (timer reaches 0) | +1 | None |
-| **Skip** on overlay (hold 11s) or menu **Skip** / **Restart** during break | Reset to 0 | +`skipPenaltyMinutes` |
+| Action | Next break penalty |
+|--------|-------------------|
+| Complete break (timer reaches 0) | None |
+| **Skip** on overlay (hold 11s) or menu **Skip** / **Restart** during break | +`skipPenaltyMinutes` |
 
 ## Contributing
 

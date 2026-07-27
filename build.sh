@@ -8,6 +8,16 @@ APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 MACOS_DIR="$APP_BUNDLE/Contents/MacOS"
 SDK="$(xcrun --show-sdk-path)"
 
+# Version from VERSION file (semver) + git commit for CFBundleVersion
+VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION")"
+if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  BUILD_NUMBER="$(git -C "$ROOT" rev-list --count HEAD)"
+  GIT_SHA="$(git -C "$ROOT" rev-parse --short HEAD)"
+else
+  BUILD_NUMBER="1"
+  GIT_SHA="local"
+fi
+
 # Detect Apple Silicon vs Intel
 ARCH="$(uname -m)"
 if [[ "$ARCH" == "arm64" ]]; then
@@ -59,6 +69,7 @@ swiftc \
   "$ROOT/LookAway/Services/MicrophoneMonitor.swift" \
   "$ROOT/LookAway/Services/SleepWakeMonitor.swift" \
   "$ROOT/LookAway/Services/MenuBarWindowDismisser.swift" \
+  "$ROOT/LookAway/Services/MenuBarWindowBackground.swift" \
   "$ROOT/LookAway/Services/BreakInputShield.swift" \
   "$ROOT/LookAway/Services/LaunchAtLoginManager.swift" \
   "$ROOT/LookAway/Views/MenuBarView.swift" \
@@ -86,14 +97,29 @@ cp "$ICNS" "$RESOURCES_DIR/AppIcon.icns"
 /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string 'Look Away'" "$APP_BUNDLE/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Delete :CFBundleIconFile" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon" "$APP_BUNDLE/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null \
+  || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $VERSION" "$APP_BUNDLE/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null \
+  || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $BUILD_NUMBER" "$APP_BUNDLE/Contents/Info.plist"
 
 codesign --force --deep --sign - "$APP_BUNDLE"
 
+ZIP_PATH="$BUILD_DIR/${APP_NAME}-${VERSION}-${GIT_SHA}.zip"
+(
+  cd "$BUILD_DIR"
+  rm -f "$ZIP_PATH"
+  ditto -c -k --sequesterRsrc --keepParent "$APP_NAME.app" "$(basename "$ZIP_PATH")"
+)
+
 echo ""
 echo "Built: $APP_BUNDLE"
+echo "Version: $VERSION ($BUILD_NUMBER / $GIT_SHA)"
+echo "Zip:    $ZIP_PATH"
 
 if [[ "${1:-}" == "--no-open" ]]; then
   echo "Run:   open \"$APP_BUNDLE\""
+elif [[ "${1:-}" == "--zip-only" ]]; then
+  echo "Zip-only build complete."
 else
   open "$APP_BUNDLE"
   echo "Launched: $APP_BUNDLE"
