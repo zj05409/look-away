@@ -5,7 +5,7 @@
 Follow [Applying Liquid Glass to custom views](https://developer.apple.com/documentation/swiftui/applying-liquid-glass-to-custom-views):
 
 - **Menu panel:** one outer `.glassEffect(.regular.tint(...), in: .rect(cornerRadius:))` via `LookAwayGlassPanel`. **No** `GlassEffectContainer` wrapper around the whole panel. **No** extra `clipShape` on the liquid-glass path (mismatched continuous vs circular corners caused a double-border artifact).
-- **Window chrome:** MenuBarExtra `.window` background must be cleared (`.containerBackground(.clear, for: .window)` + `MenuBarWindowBackgroundClearer`) so the system rounded rect does not peek behind the glass panel.
+- **Window chrome:** MenuBarExtra `.window` background must be cleared via `MenuBarWindowBackgroundClearer` (AppKit: clear window + hide injected `NSVisualEffectView`) so the system rounded rect does not peek behind the glass panel.
 - **Inner controls:** `lookAwayControlSurface` / `lookAwayCapsuleSurface` — subtle pink-tinted fills, not nested glass.
 - **Break overlay timer:** direct `.glassEffect` on the bold countdown pill only.
 - Apply `.glassEffect` **after** padding and overlays that affect appearance.
