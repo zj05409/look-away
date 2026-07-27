@@ -119,7 +119,6 @@ struct MenuBarView: View {
         .frame(width: 280)
         .fixedSize(horizontal: false, vertical: true)
         .background(MenuBarWindowBackgroundClearer())
-        .containerBackground(.clear, for: .window)
         .onReceive(NotificationCenter.default.publisher(for: .lookAwayBreakStarted)) { _ in
             dismiss()
         }
