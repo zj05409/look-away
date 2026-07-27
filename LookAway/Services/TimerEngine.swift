@@ -265,7 +265,7 @@ final class TimerEngine: ObservableObject {
         tickTimer?.invalidate()
         lastTickDate = Date()
         let timer = Timer(fire: Date(), interval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.tick()
             }
         }

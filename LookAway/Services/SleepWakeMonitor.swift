@@ -41,7 +41,7 @@ final class SleepWakeMonitor: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.isSystemSleeping = true
                 self?.syncPausedState()
             }
@@ -52,7 +52,7 @@ final class SleepWakeMonitor: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.isDisplayAsleep = true
                 self?.syncPausedState()
             }
@@ -63,7 +63,7 @@ final class SleepWakeMonitor: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.isSystemSleeping = false
                 self?.refreshFromSystemState()
             }
@@ -74,7 +74,7 @@ final class SleepWakeMonitor: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.isDisplayAsleep = Self.areAllDisplaysAsleep()
                 self?.syncPausedState()
             }
@@ -85,7 +85,7 @@ final class SleepWakeMonitor: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.isScreenLocked = true
                 self?.syncPausedState()
             }
@@ -96,7 +96,7 @@ final class SleepWakeMonitor: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.isScreenLocked = false
                 self?.syncPausedState()
             }
