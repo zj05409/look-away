@@ -25,8 +25,6 @@ final class AppViewModel: ObservableObject {
         notificationHandler.timerEngine = timerEngine
         notificationHandler.install()
 
-        LaunchAtLoginManager.syncWithConfig(configManager.config.launchAtLogin)
-
         bind()
 
         configManager.objectWillChange
@@ -34,12 +32,27 @@ final class AppViewModel: ObservableObject {
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
+
+        // Defer until the app/run loop is ready so the first-launch alert can present.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            LaunchAtLoginManager.promptOnFirstLaunchIfNeeded(configManager: self.configManager)
+        }
     }
 
     private func bind() {
         configManager.$config
             .sink { [weak self] config in
                 self?.timerEngine.applyConfig(config)
+            }
+            .store(in: &cancellables)
+
+        // Skip the initial value — first-launch prompt (or subsequent sync) owns login registration.
+        configManager.$config
+            .dropFirst()
+            .sink { config in
+                guard LaunchAtLoginManager.hasPrompted else { return }
+                LaunchAtLoginManager.syncWithConfig(config.launchAtLogin)
             }
             .store(in: &cancellables)
 
@@ -56,10 +69,6 @@ final class AppViewModel: ObservableObject {
             )
         }
         .store(in: &cancellables)
-    }
-
-    var launchAtLogin: Bool {
-        LaunchAtLoginManager.isEnabled
     }
 
     func togglePause() {
@@ -80,13 +89,6 @@ final class AppViewModel: ObservableObject {
         )
     }
 
-    func setLaunchAtLogin(_ enabled: Bool) {
-        guard enabled != LaunchAtLoginManager.isEnabled else { return }
-        if LaunchAtLoginManager.setEnabled(enabled) {
-            configManager.update { $0.launchAtLogin = enabled }
-        }
-    }
-
     func quit() {
         NSApplication.shared.terminate(nil)
     }
@@ -97,12 +99,10 @@ struct MenuBarView: View {
 
     @ObservedObject var viewModel: AppViewModel
     @ObservedObject var timerEngine: TimerEngine
-    @State private var showsSettings = false
-    @State private var draftConfig: AppConfig
+
     init(viewModel: AppViewModel, timerEngine: TimerEngine) {
         self.viewModel = viewModel
         self.timerEngine = timerEngine
-        _draftConfig = State(initialValue: viewModel.configManager.config)
     }
 
     var body: some View {
@@ -112,21 +112,14 @@ struct MenuBarView: View {
 
                 quickActions
 
-                if showsSettings {
-                    settingsPanel
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-
                 footer
             }
             .padding(MenuPanelMetrics.padding)
         }
-        .frame(width: showsSettings ? 300 : 280)
+        .frame(width: 280)
         .fixedSize(horizontal: false, vertical: true)
-        .animation(.smooth(duration: 0.22), value: showsSettings)
-        .onChange(of: viewModel.configManager.config) { _, newValue in
-            draftConfig = newValue
-        }
+        .background(MenuBarWindowBackgroundClearer())
+        .containerBackground(.clear, for: .window)
         .onReceive(NotificationCenter.default.publisher(for: .lookAwayBreakStarted)) { _ in
             dismiss()
         }
@@ -155,14 +148,10 @@ struct MenuBarView: View {
 
             Spacer(minLength: 0)
 
-            HStack(spacing: MenuPanelMetrics.spacing) {
-                StreakBadge(count: timerEngine.consecutiveBreaks, compact: true)
-
-                if timerEngine.phase == .onBreak {
-                    LookAwayStatusChip(text: "Break")
-                } else if timerEngine.phase == .paused {
-                    LookAwayStatusChip(text: "Paused")
-                }
+            if timerEngine.phase == .onBreak {
+                LookAwayStatusChip(text: "Break")
+            } else if timerEngine.phase == .paused {
+                LookAwayStatusChip(text: "Paused")
             }
         }
     }
@@ -223,107 +212,16 @@ struct MenuBarView: View {
         }
     }
 
-    private var settingsPanel: some View {
-        VStack(alignment: .leading, spacing: MenuPanelMetrics.spacing) {
-            sectionLabel("Intervals", isFirst: true)
-
-            ConfigNumberRow(
-                title: "Work duration",
-                subtitle: "Time before a break",
-                value: workMinutesBinding,
-                range: 1...(24 * 60),
-                unit: "m",
-                compact: true,
-                showsSubtitle: false
-            )
-
-            ConfigNumberRow(
-                title: "Break duration",
-                subtitle: "Rest overlay length",
-                value: breakMinutesBinding,
-                range: 1...180,
-                unit: "m",
-                compact: true,
-                showsSubtitle: false
-            )
-
-            sectionLabel("Behavior")
-
-            ConfigToggleRow(
-                title: "Launch at login",
-                subtitle: "Start automatically",
-                isOn: Binding(
-                    get: { viewModel.launchAtLogin },
-                    set: { viewModel.setLaunchAtLogin($0) }
-                ),
-                compact: true,
-                showsSubtitle: false
-            )
-
-            Button {
-                viewModel.configManager.openConfigFile()
-            } label: {
-                Label("Reveal config.json", systemImage: "doc.text")
-                    .font(MenuPanelMetrics.controlFont)
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 2)
-        }
-    }
-
     private var footer: some View {
-        VStack(spacing: MenuPanelMetrics.spacing) {
-            Button {
-                showsSettings.toggle()
-            } label: {
-                Label(
-                    showsSettings ? "Hide settings" : "Settings",
-                    systemImage: showsSettings ? "chevron.up" : "chevron.down"
-                )
+        Button {
+            viewModel.quit()
+        } label: {
+            Label("Quit", systemImage: "power")
                 .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(MenuActionButtonStyle())
-
-            Button {
-                viewModel.quit()
-            } label: {
-                Label("Quit", systemImage: "power")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(MenuActionButtonStyle(role: .destructive))
-            .disabled(timerEngine.phase == .onBreak)
-            .keyboardShortcut("q")
         }
-    }
-
-    private var workMinutesBinding: Binding<Int> {
-        Binding(
-            get: { draftConfig.workDurationMinutes },
-            set: { newValue in updateDraft { $0.workDurationMinutes = newValue } }
-        )
-    }
-
-    private var breakMinutesBinding: Binding<Int> {
-        Binding(
-            get: { draftConfig.breakDurationMinutes },
-            set: { newValue in updateDraft { $0.breakDurationMinutes = newValue } }
-        )
-    }
-
-    private func updateDraft(_ transform: (inout AppConfig) -> Void) {
-        var copy = draftConfig
-        transform(&copy)
-        draftConfig = copy
-        viewModel.configManager.replace(with: copy)
-    }
-
-    private func sectionLabel(_ title: String, isFirst: Bool = false) -> some View {
-        Text(title.uppercased())
-            .font(MenuPanelMetrics.sectionFont)
-            .foregroundStyle(.tertiary)
-            .padding(.horizontal, 2)
-            .padding(.top, isFirst ? 0 : MenuPanelMetrics.spacing)
+        .buttonStyle(MenuActionButtonStyle(role: .destructive))
+        .disabled(timerEngine.phase == .onBreak)
+        .keyboardShortcut("q")
     }
 
     private func menuButton(title: String, symbol: String, centered: Bool = false, action: @escaping () -> Void) -> some View {

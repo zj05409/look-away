@@ -92,7 +92,7 @@ extension View {
     }
 }
 
-/// Single outer glass shell for the menu panel — no container wrapper.
+/// Single outer glass shell for the menu panel — no container wrapper, no extra clip.
 struct LookAwayGlassPanel<Content: View>: View {
     let content: Content
 
@@ -101,28 +101,13 @@ struct LookAwayGlassPanel<Content: View>: View {
     }
 
     var body: some View {
+        // glassEffect already clips to its shape. An extra continuous clipShape
+        // over a circular `.rect(cornerRadius:)` caused the double-corner artifact.
         content
             .glassEffect(
                 LookAwayGlass.panelGlass,
                 in: .rect(cornerRadius: LookAwayGlass.panelCornerRadius)
             )
-            .clipShape(RoundedRectangle(cornerRadius: LookAwayGlass.panelCornerRadius, style: .continuous))
-    }
-}
-
-struct LookAwayGlassGroup<Content: View>: View {
-    let spacing: CGFloat
-    let content: () -> Content
-
-    init(spacing: CGFloat = LookAwayGlass.containerSpacing, @ViewBuilder content: @escaping () -> Content) {
-        self.spacing = spacing
-        self.content = content
-    }
-
-    var body: some View {
-        GlassEffectContainer(spacing: spacing) {
-            content()
-        }
     }
 }
 #else
@@ -167,20 +152,6 @@ struct LookAwayGlassPanel<Content: View>: View {
                 tint: LookAwayGlass.menuPanelTint
             )
             .clipShape(RoundedRectangle(cornerRadius: LookAwayGlass.panelCornerRadius, style: .continuous))
-    }
-}
-
-struct LookAwayGlassGroup<Content: View>: View {
-    let spacing: CGFloat
-    let content: () -> Content
-
-    init(spacing: CGFloat = LookAwayGlass.containerSpacing, @ViewBuilder content: @escaping () -> Content) {
-        self.spacing = spacing
-        self.content = content
-    }
-
-    var body: some View {
-        content()
     }
 }
 #endif
@@ -245,34 +216,5 @@ extension View {
         interactive: Bool = false
     ) -> some View {
         lookAwayControlSurface(cornerRadius: cornerRadius, tint: tint)
-    }
-}
-
-// MARK: - Composite components
-
-struct TimerHeroCard: View {
-    @ObservedObject var engine: TimerEngine
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(engine.phaseDisplayName)
-                .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .foregroundStyle(.secondary)
-
-            Text(engine.displayTime)
-                .font(.system(size: 28, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(.primary)
-
-            if !engine.statusDetail.isEmpty {
-                Text(engine.statusDetail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .lookAwayGlassSurface(cornerRadius: LookAwayGlass.cardCornerRadius, tint: LookAwayGlass.accentTint())
     }
 }

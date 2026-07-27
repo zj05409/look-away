@@ -25,7 +25,7 @@ Thank you for considering a contribution. This project is a native macOS menu ba
 open build/LookAway.app
 ```
 
-The script prints whether **Liquid Glass** is enabled (`LIQUID_GLASS` compile flag) or material fallbacks are used.
+The script prints whether **Liquid Glass** is enabled (`LIQUID_GLASS` compile flag) or material fallbacks are used. It also writes `build/LookAway-<version>-<sha>.zip`.
 
 ### Xcode workflow
 
@@ -46,29 +46,34 @@ The script prints whether **Liquid Glass** is enabled (`LIQUID_GLASS` compile fl
 | `knowledge/` | Internal design notes (liquid glass, break overlay, palette) |
 | `scripts/` | App icon generation |
 | `build.sh` | Command-line build without full Xcode |
+| `VERSION` | Marketing semver for CI and `CFBundleShortVersionString` |
+| `.github/workflows/build.yml` | macOS CI — artifact + Releases |
 
 ### Key files
 
 | File | Purpose |
 |------|---------|
-| `TimerEngine.swift` | Work/break/pause phases, streak, skip penalty |
+| `TimerEngine.swift` | Work/break/pause phases, skip penalty |
 | `BreakOverlayController.swift` | Multi-monitor black overlay panels |
-| `BreakOverlayView.swift` | Lock screen UI — streak, glass timer, title, skip |
+| `BreakOverlayView.swift` | Lock screen UI — glass timer, title, skip |
 | `BreakInputShield.swift` | Blocks ⌘Q / ⌘W / ⌘Tab / Esc during breaks |
 | `GlassStyles.swift` | `LookAwayGlassPanel`, liquid glass helpers, button styles |
 | `LookAwayDesign.swift` | Pink accent tokens, layout metrics, status chips |
-| `MenuBarView.swift` | Menu bar panel and settings |
-| `MenuControls.swift` | Hold-to-confirm buttons, config rows, streak badge |
-| `BreakStats.swift` | Streak and pending penalty persistence (`stats.json`) |
+| `MenuBarView.swift` | Menu bar panel |
+| `MenuControls.swift` | Hold-to-confirm buttons |
+| `MenuBarWindowBackground.swift` | Clears MenuBarExtra chrome (prevents double border) |
+| `BreakStats.swift` | Pending skip penalty persistence (`stats.json`) |
+| `LaunchAtLoginManager.swift` | First-launch prompt + login item registration |
 | `MenuBarWindowDismisser.swift` | Closes menu bar window when break starts |
 
 ## UI guidelines
 
 - **One accent color** — `LookAwayBrand.accent` (pink). Do not introduce secondary earthy or multi-accent palettes.
-- **Menu panel** — single outer `glassEffect` via `LookAwayGlassPanel`. Inner controls use `lookAwayControlSurface` fills, not nested glass.
-- **Break overlay** — true black background. Glass only on the countdown timer (and subtle streak capsule). No full-screen containers or photo backgrounds.
+- **Menu panel** — single outer `glassEffect` via `LookAwayGlassPanel` on a **clear** MenuBarExtra window. Do not add a second clipShape with a different corner style. Inner controls use `lookAwayControlSurface` fills, not nested glass.
+- **Break overlay** — true black background. Glass only on the countdown timer. No full-screen containers or photo backgrounds.
 - **Liquid Glass** — follow [Apple’s SwiftUI guide](https://developer.apple.com/documentation/swiftui/applying-liquid-glass-to-custom-views). Do not use AppKit `NSGlassEffectView` KVC bridges from SwiftUI.
 - Apply `.glassEffect` **after** padding and overlays that affect layout.
+- No in-app Settings panel — intervals and advanced options live in `config.json`.
 
 ## Coding guidelines
 
@@ -78,6 +83,7 @@ The script prints whether **Liquid Glass** is enabled (`LIQUID_GLASS` compile fl
 - No new dependencies unless discussed in an issue first; the app intentionally stays dependency-free.
 - Test on both Apple Silicon and Intel when touching build or platform code.
 - When changing `build.sh` source list, update `LookAway.xcodeproj` in the same PR.
+- Bump [`VERSION`](VERSION) when cutting a user-facing release; tag as `vX.Y.Z`.
 
 ## Pull request process
 
@@ -86,11 +92,12 @@ The script prints whether **Liquid Glass** is enabled (`LIQUID_GLASS` compile fl
 3. Verify the app builds with `./build.sh` (or Xcode).
 4. Manually smoke-test:
    - Timer tick, pause/resume, restart (hold)
-   - Break overlay: black screen, streak badge, bold glass timer, **Look Away** title, faint skip
-   - Hold **Skip** on overlay or menu ends break early (streak resets, penalty applied)
+   - Break overlay: black screen, bold glass timer, **Look Away** title, faint skip
+   - Hold **Skip** on overlay or menu ends break early (penalty applied)
    - Menu bar closes and disables during break
-   - Menu panel corners look uniform (no double-radius shell)
-   - Settings persist to `config.json`
+   - Menu panel corners look uniform (no double-radius / system chrome peeking)
+   - First-launch launch-at-login prompt (reset `defaults delete io.github.dvdcarlomagno.lookaway lookAway.hasPromptedLaunchAtLogin` to retest)
+   - `config.json` edits reload while running
 5. Open a PR describing **what** changed and **why**.
 6. Link any related issues.
 
@@ -99,7 +106,7 @@ The script prints whether **Liquid Glass** is enabled (`LIQUID_GLASS` compile fl
 Include:
 
 - macOS version and chip (Apple Silicon / Intel)
-- How you built the app (`build.sh` vs Xcode) and whether Liquid Glass was enabled in the build log
+- How you built the app (`build.sh` vs Xcode vs downloaded release) and whether Liquid Glass was enabled in the build log
 - Steps to reproduce
 - Expected vs actual behavior
 - Screenshots or screen recordings when UI-related
