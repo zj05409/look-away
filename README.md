@@ -27,6 +27,8 @@ Versioned releases (tags like `v1.1.0`) keep older builds under [Releases](https
 - Pauses while the display is off, the Mac is asleep, or the screen is locked; **resumes** where you left off on a short return, **restarts the work timer** when away time reaches the configured break duration (manual pause always resumes)
 - **Launch at login** — prompted on first launch (default: enable); change later in System Settings → General → Login Items, or set `launchAtLogin` in `config.json`
 - Pre-break warning notification (optional, off by default) with **Extend 3 minutes** action in the notification and menu bar
+- Configurable reminder text shared by the pre-break notification and full-screen break overlay
+- After the minimum break ends, the overlay waits for an explicit **Start Working** confirmation before starting the next work timer
 - Native Liquid Glass UI on macOS 26 via SwiftUI `glassEffect` (material fallback on older macOS / SDKs)
 
 ## Design
@@ -111,6 +113,7 @@ On first launch the app:
   "workDurationMinutes": 120,
   "breakDurationMinutes": 15,
   "preBreakWarningMinutes": 0,
+  "reminderMessage": "喝杯水，并且去有光照的地方慢跑五分钟，回来冷水冲脸",
   "skipPenaltyMinutes": 5,
   "launchAtLogin": true
 }
@@ -127,6 +130,7 @@ Copy values from [`config.example.json`](config.example.json) if you prefer to s
 | `workDurationMinutes` | `120` | Minutes before a break starts |
 | `breakDurationMinutes` | `15` | Break overlay duration |
 | `preBreakWarningMinutes` | `0` | Minutes before break to notify (`0` = off) |
+| `reminderMessage` | Chinese activity reminder | Text shown in the pre-break notification and break overlay (up to 500 characters) |
 | `skipPenaltyMinutes` | `5` | Extra minutes added to the next break after an early skip (`0` = off) |
 | `launchAtLogin` | `true` | Register app at login (also set by the first-launch prompt) |
 

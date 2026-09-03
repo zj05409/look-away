@@ -2,7 +2,8 @@ import SwiftUI
 
 struct BreakOverlayView: View {
     @ObservedObject var engine: TimerEngine
-    let onEndBreak: () -> Void
+    let onSkipBreak: () -> Void
+    let onStartWorking: () -> Void
 
     private var formattedTime: String {
         let total = Int(max(0, engine.remainingSeconds.rounded()))
@@ -19,19 +20,47 @@ struct BreakOverlayView: View {
                 Spacer(minLength: 0)
 
                 VStack(spacing: 20) {
-                    timerDisplay
+                    if engine.phase == .breakComplete {
+                        completionDisplay
+                    } else {
+                        timerDisplay
+                    }
 
-                    Text("Look Away")
-                        .font(.system(.title3, design: .rounded, weight: .semibold))
+                    Text(engine.reminderMessage)
+                        .font(.system(.title2, design: .rounded, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.82))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(6)
                 }
 
                 Spacer(minLength: 0)
 
-                skipControl
-                    .padding(.bottom, 48)
+                Group {
+                    if engine.phase == .breakComplete {
+                        startWorkingControl
+                    } else {
+                        skipControl
+                    }
+                }
+                .padding(.bottom, 48)
             }
             .padding(.horizontal, 32)
+        }
+    }
+
+    private var completionDisplay: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 64, weight: .semibold))
+                .foregroundStyle(.green)
+
+            Text("休息已达标")
+                .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                .foregroundStyle(.white)
+
+            Text("准备好后，再开始下一轮工作")
+                .font(.system(.body, design: .rounded))
+                .foregroundStyle(.white.opacity(0.65))
         }
     }
 
@@ -53,10 +82,21 @@ struct BreakOverlayView: View {
             role: .destructive,
             centered: true,
             overlayGlass: true,
-            onConfirm: onEndBreak
+            onConfirm: onSkipBreak
         )
         .frame(maxWidth: 160)
         .opacity(0.2)
+    }
+
+    private var startWorkingControl: some View {
+        Button(action: onStartWorking) {
+            Label("开始工作", systemImage: "play.fill")
+                .font(.system(.title3, design: .rounded, weight: .semibold))
+                .padding(.horizontal, 28)
+                .padding(.vertical, 14)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(LookAwayBrand.accent)
     }
 }
 

@@ -122,8 +122,8 @@ struct MenuBarView: View {
         .onReceive(NotificationCenter.default.publisher(for: .lookAwayBreakStarted)) { _ in
             dismiss()
         }
-        .disabled(timerEngine.phase == .onBreak)
-        .opacity(timerEngine.phase == .onBreak ? 0.6 : 1)
+        .disabled(timerEngine.isBreakOverlayActive)
+        .opacity(timerEngine.isBreakOverlayActive ? 0.6 : 1)
     }
 
     private var compactHeader: some View {
@@ -147,7 +147,7 @@ struct MenuBarView: View {
 
             Spacer(minLength: 0)
 
-            if timerEngine.phase == .onBreak {
+            if timerEngine.isBreakOverlayActive {
                 LookAwayStatusChip(text: "Break")
             } else if timerEngine.phase == .paused {
                 LookAwayStatusChip(text: "Paused")
@@ -200,7 +200,7 @@ struct MenuBarView: View {
                 }
             }
 
-            if timerEngine.pendingPenaltyMinutes > 0 && timerEngine.phase != .onBreak {
+            if timerEngine.pendingPenaltyMinutes > 0 && !timerEngine.isBreakOverlayActive {
                 Text("Next break +\(timerEngine.pendingPenaltyMinutes) min from skip")
                     .font(MenuPanelMetrics.controlFont)
                     .foregroundStyle(.red)
@@ -219,7 +219,7 @@ struct MenuBarView: View {
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(MenuActionButtonStyle(role: .destructive))
-        .disabled(timerEngine.phase == .onBreak)
+        .disabled(timerEngine.isBreakOverlayActive)
         .keyboardShortcut("q")
     }
 

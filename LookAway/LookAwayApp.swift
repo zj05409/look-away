@@ -6,7 +6,7 @@ struct LookAwayApp: App {
     @StateObject private var viewModel = AppViewModel()
 
     private var isBreakLocked: Bool {
-        viewModel.timerEngine.phase == .onBreak
+        viewModel.timerEngine.isBreakOverlayActive
     }
 
     var body: some Scene {

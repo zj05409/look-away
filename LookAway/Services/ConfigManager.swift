@@ -8,7 +8,6 @@ final class ConfigManager: ObservableObject {
     let configURL: URL
 
     private var fileWatcher: DispatchSourceFileSystemObject?
-    private let fileDescriptor: Int32
     private var suppressWatcherReloadUntil: Date?
 
     init() {
@@ -27,17 +26,11 @@ final class ConfigManager: ObservableObject {
         }
         config = initialConfig
 
-        fileDescriptor = open(configURL.path, O_EVTONLY)
-        if fileDescriptor >= 0 {
-            startWatching()
-        }
+        startWatching()
     }
 
     deinit {
         fileWatcher?.cancel()
-        if fileDescriptor >= 0 {
-            close(fileDescriptor)
-        }
     }
 
     func reload() {
@@ -76,6 +69,15 @@ final class ConfigManager: ObservableObject {
     }
 
     private func startWatching() {
+        guard fileWatcher == nil else { return }
+        let fileDescriptor = open(configURL.path, O_EVTONLY)
+        guard fileDescriptor >= 0 else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                self?.startWatching()
+            }
+            return
+        }
+
         let source = DispatchSource.makeFileSystemObjectSource(
             fileDescriptor: fileDescriptor,
             eventMask: [.write, .rename, .delete],
@@ -83,7 +85,7 @@ final class ConfigManager: ObservableObject {
         )
         source.setEventHandler { [weak self] in
             Task { @MainActor [weak self] in
-                self?.reload()
+                self?.reloadAndRearmWatcher()
             }
         }
         source.setCancelHandler { [fileDescriptor] in
@@ -93,10 +95,23 @@ final class ConfigManager: ObservableObject {
         fileWatcher = source
     }
 
+    /// Editors commonly save JSON by replacing the file instead of changing it in place.
+    /// Reopen the path after every event so live reload keeps following the new inode.
+    private func reloadAndRearmWatcher() {
+        reload()
+        fileWatcher?.cancel()
+        fileWatcher = nil
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            self?.reload()
+            self?.startWatching()
+        }
+    }
+
     private static func load(from url: URL) throws -> AppConfig {
         let data = try Data(contentsOf: url)
         let decoder = JSONDecoder()
-        return try decoder.decode(AppConfig.self, from: data)
+        return AppConfig.sanitized(try decoder.decode(AppConfig.self, from: data))
     }
 
     private static func save(_ config: AppConfig, to url: URL) throws {

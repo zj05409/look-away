@@ -92,8 +92,11 @@ final class BreakOverlayController: ObservableObject {
             let hosting = NSHostingController(
                 rootView: BreakOverlayView(
                     engine: engine,
-                    onEndBreak: { [weak engine] in
+                    onSkipBreak: { [weak engine] in
                         engine?.abortBreakEarly()
+                    },
+                    onStartWorking: { [weak engine] in
+                        engine?.startWorkingAfterBreak()
                     }
                 )
             )

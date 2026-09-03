@@ -7,6 +7,7 @@ enum TimerPhase: Equatable {
     case working
     case preBreakWarning
     case onBreak
+    case breakComplete
     case paused
 }
 
@@ -39,6 +40,8 @@ final class TimerEngine: ObservableObject {
         switch phase {
         case .onBreak:
             return "Break: \(menuBarDisplayTime)"
+        case .breakComplete:
+            return "休息已达标，等待开始工作"
         case .paused:
             if statusDetail.contains("call") {
                 return "Call active"
@@ -67,6 +70,8 @@ final class TimerEngine: ObservableObject {
             return "Break approaching"
         case .onBreak:
             return "Rest your eyes"
+        case .breakComplete:
+            return "休息已达标"
         case .paused:
             return "Paused"
         }
@@ -80,6 +85,8 @@ final class TimerEngine: ObservableObject {
             return "bell.badge"
         case .onBreak:
             return "eye.fill"
+        case .breakComplete:
+            return "checkmark.circle.fill"
         case .paused:
             return "pause.circle"
         }
@@ -93,6 +100,8 @@ final class TimerEngine: ObservableObject {
             return config.preBreakWarningSeconds
         case .onBreak:
             return config.breakDurationSeconds + TimeInterval(appliedPenaltyMinutes * 60)
+        case .breakComplete:
+            return 0
         case .paused:
             return config.workDurationSeconds
         }
@@ -102,6 +111,14 @@ final class TimerEngine: ObservableObject {
         let total = activePhaseDuration
         guard total > 0 else { return 0 }
         return max(0, min(1, 1 - (remainingSeconds / total)))
+    }
+
+    var isBreakOverlayActive: Bool {
+        phase == .onBreak || phase == .breakComplete
+    }
+
+    var reminderMessage: String {
+        config.reminderMessage
     }
 
     init(config: AppConfig) {
@@ -129,6 +146,8 @@ final class TimerEngine: ObservableObject {
             } else {
                 internalRemaining = min(internalRemaining, config.breakDurationSeconds)
             }
+        case .breakComplete:
+            break
         case .preBreakWarning:
             if config.preBreakWarningMinutes != previous.preBreakWarningMinutes {
                 internalRemaining = config.preBreakWarningSeconds
@@ -171,6 +190,13 @@ final class TimerEngine: ObservableObject {
     func abortBreakEarly() {
         guard phase == .onBreak else { return }
         recordEarlyAbort()
+        transitionToWorkingAfterBreak()
+    }
+
+    /// Starts a fresh focus cycle only after the minimum break has completed
+    /// and the user explicitly confirms that they are back at work.
+    func startWorkingAfterBreak() {
+        guard phase == .breakComplete else { return }
         transitionToWorkingAfterBreak()
     }
 
@@ -232,6 +258,9 @@ final class TimerEngine: ObservableObject {
     private func handleReturnFromSystemAway() {
         defer { systemAwayStartedAt = nil }
 
+        // Once the minimum rest is complete, sleeping or locking the Mac must not
+        // bypass the explicit "Start Working" confirmation.
+        guard phase != .breakComplete else { return }
         guard let startedAt = systemAwayStartedAt else { return }
         let awayDuration = Date().timeIntervalSince(startedAt)
         guard awayDuration >= config.breakDurationSeconds else { return }
@@ -245,6 +274,8 @@ final class TimerEngine: ObservableObject {
 
         if wasOnBreak {
             appliedPenaltyMinutes = 0
+            transitionToBreakComplete()
+            return
         }
 
         phase = .working
@@ -294,6 +325,8 @@ final class TimerEngine: ObservableObject {
             handlePreBreakWarningTick()
         case .onBreak:
             handleBreakTick()
+        case .breakComplete:
+            break
         case .paused:
             break
         }
@@ -312,6 +345,8 @@ final class TimerEngine: ObservableObject {
         switch phase {
         case .onBreak, .working, .preBreakWarning:
             newText = menuBarDisplayTime
+        case .breakComplete:
+            newText = "Ready"
         case .paused:
             newText = statusDetail.contains("call") ? "Call active" : "Paused"
         }
@@ -360,7 +395,7 @@ final class TimerEngine: ObservableObject {
 
     private func handleBreakTick() {
         if internalRemaining <= 0 {
-            endBreak()
+            transitionToBreakComplete()
         }
     }
 
@@ -379,8 +414,12 @@ final class TimerEngine: ObservableObject {
         NotificationCenter.default.post(name: .lookAwayBreakStarted, object: nil)
     }
 
-    private func endBreak() {
-        transitionToWorkingAfterBreak()
+    private func transitionToBreakComplete() {
+        phase = .breakComplete
+        internalRemaining = 0
+        statusDetail = "休息已达标"
+        publishRemainingIfDisplayChanged(force: true)
+        stopTicking()
     }
 
     private func transitionToWorkingAfterBreak() {
@@ -422,6 +461,11 @@ final class TimerEngine: ObservableObject {
             return
         }
 
+        if phase == .breakComplete {
+            stopTicking()
+            return
+        }
+
         let shouldPause = isManuallyPaused || mic || asleep
 
         if shouldPause {
@@ -450,12 +494,14 @@ final class TimerEngine: ObservableObject {
     private func sendPreBreakNotificationIfNeeded() {
         guard !preBreakWarningSent else { return }
         preBreakWarningSent = true
+        let warningMinutes = config.preBreakWarningMinutes
+        let reminderMessage = config.reminderMessage
 
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
             guard granted else { return }
             let content = UNMutableNotificationContent()
-            content.title = "Break starting soon"
-            content.body = "Your look-away break begins in \(Int(self.config.preBreakWarningMinutes)) minute(s). Extend for \(Self.sessionExtensionMinutes) more minutes if you need longer."
+            content.title = "\(warningMinutes) 分钟后强制休息"
+            content.body = reminderMessage
             content.categoryIdentifier = LookAwayNotification.preBreakCategory
             let request = UNNotificationRequest(
                 identifier: LookAwayNotification.preBreakRequestID,

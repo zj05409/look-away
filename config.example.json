@@ -2,6 +2,7 @@
   "breakDurationMinutes": 15,
   "launchAtLogin": true,
   "preBreakWarningMinutes": 0,
+  "reminderMessage": "喝杯水，并且去有光照的地方慢跑五分钟，回来冷水冲脸",
   "skipPenaltyMinutes": 5,
   "workDurationMinutes": 120
 }
