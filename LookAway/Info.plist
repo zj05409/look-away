@@ -9,7 +9,7 @@
 	<key>CFBundleExecutable</key>
 	<string>LookAway</string>
 	<key>CFBundleIdentifier</key>
-	<string>io.github.dvdcarlomagno.lookaway</string>
+	<string>io.github.zj05409.lookaway</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

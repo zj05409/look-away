@@ -7,6 +7,8 @@ BUILD_DIR="$ROOT/build"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 MACOS_DIR="$APP_BUNDLE/Contents/MacOS"
 SDK="$(xcrun --show-sdk-path)"
+MODULE_CACHE_DIR="${TMPDIR:-/tmp}/look-away-module-cache"
+mkdir -p "$MODULE_CACHE_DIR"
 
 # Version from VERSION file (semver) + git commit for CFBundleVersion
 VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION")"
@@ -35,7 +37,7 @@ func lookAwayGlassProbe() -> some View {
     Text("probe").glassEffect()
 }
 EOF
-if swiftc -typecheck "$GLASS_PROBE" -sdk "$SDK" -target "$TARGET" 2>/dev/null; then
+if [[ "$TARGET" == *"macosx26.0" ]] && CLANG_MODULE_CACHE_PATH="$MODULE_CACHE_DIR" SWIFT_MODULECACHE_PATH="$MODULE_CACHE_DIR" swiftc -typecheck "$GLASS_PROBE" -sdk "$SDK" -target "$TARGET" 2>/dev/null; then
   SWIFT_FLAGS+=(-D LIQUID_GLASS)
   echo "Liquid Glass: enabled (SwiftUI glassEffect available in SDK)"
 else
@@ -48,7 +50,7 @@ echo "Building $APP_NAME for $TARGET ..."
 rm -rf "$APP_BUNDLE"
 mkdir -p "$MACOS_DIR"
 
-swiftc \
+CLANG_MODULE_CACHE_PATH="$MODULE_CACHE_DIR" SWIFT_MODULECACHE_PATH="$MODULE_CACHE_DIR" swiftc \
   -o "$MACOS_DIR/$APP_NAME" \
   -target "$TARGET" \
   -sdk "$SDK" \
@@ -85,13 +87,15 @@ RESOURCES_DIR="$APP_BUNDLE/Contents/Resources"
 ICONSET="$ROOT/LookAway/Resources/AppIcon.iconset"
 ICNS="$ROOT/LookAway/Resources/AppIcon.icns"
 mkdir -p "$RESOURCES_DIR" "$(dirname "$ICONSET")"
-swift "$ROOT/scripts/generate_app_icon.swift" "$ICONSET"
-iconutil -c icns "$ICONSET" -o "$ICNS"
+CLANG_MODULE_CACHE_PATH="$MODULE_CACHE_DIR" SWIFT_MODULECACHE_PATH="$MODULE_CACHE_DIR" swift "$ROOT/scripts/generate_app_icon.swift" "$ICONSET"
+if ! iconutil -c icns "$ICONSET" -o "$ICNS"; then
+  echo "Icon conversion unavailable; keeping the checked-in AppIcon.icns."
+fi
 cp "$ICNS" "$RESOURCES_DIR/AppIcon.icns"
 
 # Ensure Info.plist keys match the bundle layout
 /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable $APP_NAME" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
-/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier io.github.dvdcarlomagno.lookaway" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier io.github.zj05409.lookaway" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Set :CFBundleName 'Look Away'" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Delete :CFBundleDisplayName" "$APP_BUNDLE/Contents/Info.plist" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string 'Look Away'" "$APP_BUNDLE/Contents/Info.plist"
