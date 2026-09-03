@@ -24,7 +24,7 @@ Versioned releases (tags like `v1.1.0`) keep older builds under [Releases](https
 - Full-screen **black break overlay** on all monitors — minimal UI, keyboard focus captured
 - Break overlay hardening — shielding window level, blocked shortcuts (⌘Q, ⌘W, ⌘Tab, Esc), menu bar disabled during breaks
 - Skips breaks while the microphone is in use (calls/meetings) — checks **all** input devices, not just the system default
-- Pauses while the display is off, the Mac is asleep, or the screen is locked; **resumes** where you left off on a short return, **restarts the work timer** when away time reaches the configured break duration (manual pause always resumes)
+- Uses real elapsed time while the display is off, the Mac is asleep, or the screen is locked, so locking the screen cannot pause or bypass a scheduled break (only a manual pause or active call pauses the timer)
 - **Launch at login** — prompted on first launch (default: enable); change later in System Settings → General → Login Items, or set `launchAtLogin` in `config.json`
 - Pre-break warning notification (optional, off by default) with **Extend 3 minutes** action in the notification and menu bar
 - Configurable reminder text shared by the pre-break notification and full-screen break overlay
