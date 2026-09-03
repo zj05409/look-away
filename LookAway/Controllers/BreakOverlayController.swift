@@ -4,6 +4,8 @@ import SwiftUI
 @MainActor
 final class BreakOverlayController: ObservableObject {
     private var panels: [NSPanel] = []
+    private var warningPanel: NSPanel?
+    private var warningDismissTimer: Timer?
     private weak var timerEngine: TimerEngine?
     private let inputShield = BreakInputShield()
     private var keepFrontTimer: Timer?
@@ -13,6 +15,14 @@ final class BreakOverlayController: ObservableObject {
     }
 
     func installObservers() {
+        NotificationCenter.default.addObserver(
+            forName: .lookAwayPreBreakWarning,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.showPreBreakWarning() }
+        }
+
         NotificationCenter.default.addObserver(
             forName: .lookAwayBreakStarted,
             object: nil,
@@ -47,6 +57,7 @@ final class BreakOverlayController: ObservableObject {
     }
 
     func showOverlay() {
+        hidePreBreakWarning()
         hideOverlay()
         MenuBarWindowDismisser.closeIfOpen()
         guard timerEngine != nil else { return }
@@ -72,6 +83,45 @@ final class BreakOverlayController: ObservableObject {
             panel.close()
         }
         panels.removeAll()
+    }
+
+    private func showPreBreakWarning() {
+        guard let engine = timerEngine, panels.isEmpty else { return }
+        hidePreBreakWarning()
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 300),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.level = BreakOverlayWindowLevel.warning
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = true
+        panel.hidesOnDeactivate = false
+        panel.ignoresMouseEvents = true
+
+        let hosting = NSHostingController(rootView: PreBreakWarningView(engine: engine))
+        if #available(macOS 13.0, *) { hosting.sizingOptions = [] }
+        panel.contentViewController = hosting
+        panel.setContentSize(NSSize(width: 560, height: 300))
+        if let screen = NSScreen.main ?? NSScreen.screens.first {
+            panel.setFrameOrigin(NSPoint(x: screen.frame.midX - 280, y: screen.frame.midY - 150))
+        }
+        panel.orderFrontRegardless()
+        warningPanel = panel
+        warningDismissTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.hidePreBreakWarning() }
+        }
+    }
+
+    private func hidePreBreakWarning() {
+        warningDismissTimer?.invalidate()
+        warningDismissTimer = nil
+        warningPanel?.orderOut(nil)
+        warningPanel?.close()
+        warningPanel = nil
     }
 
     private func mountOverlayPanels() {

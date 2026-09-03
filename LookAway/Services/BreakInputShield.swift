@@ -65,4 +65,5 @@ final class BreakInputShield {
 
 enum BreakOverlayWindowLevel {
     static let shield = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
+    static let warning = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()) - 1)
 }

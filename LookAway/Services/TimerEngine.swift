@@ -366,6 +366,7 @@ final class TimerEngine: ObservableObject {
             if phase != .preBreakWarning {
                 phase = .preBreakWarning
                 syncMenuBarPresentation(force: true)
+                NotificationCenter.default.post(name: .lookAwayPreBreakWarning, object: nil)
                 sendPreBreakNotificationIfNeeded()
             }
         }
@@ -480,6 +481,7 @@ final class TimerEngine: ObservableObject {
             } else if config.preBreakWarningMinutes > 0 && internalRemaining <= config.preBreakWarningSeconds {
                 phase = .preBreakWarning
                 syncMenuBarPresentation(force: true)
+                NotificationCenter.default.post(name: .lookAwayPreBreakWarning, object: nil)
                 if tickTimer == nil { startTicking() }
             } else {
                 phase = .working
@@ -538,6 +540,7 @@ final class TimerEngine: ObservableObject {
 }
 
 extension Notification.Name {
+    static let lookAwayPreBreakWarning = Notification.Name("lookAwayPreBreakWarning")
     static let lookAwayBreakStarted = Notification.Name("lookAwayBreakStarted")
     static let lookAwayBreakEnded = Notification.Name("lookAwayBreakEnded")
 }

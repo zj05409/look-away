@@ -1,5 +1,37 @@
 import SwiftUI
 
+struct PreBreakWarningView: View {
+    @ObservedObject var engine: TimerEngine
+
+    private var countdown: String {
+        let total = Int(max(0, engine.remainingSeconds).rounded(.up))
+        return String(format: "%02d:%02d", total / 60, total % 60)
+    }
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "bell.badge.fill")
+                .font(.system(size: 34, weight: .bold))
+                .foregroundStyle(LookAwayBrand.accent)
+            Text("即将进入强制休息")
+                .font(.system(.title, design: .rounded, weight: .bold))
+            Text("还有 (countdown)")
+                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .monospacedDigit()
+            Text(engine.reminderMessage)
+                .font(.system(.body, design: .rounded, weight: .medium))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 34)
+        .padding(.vertical, 26)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24).stroke(LookAwayBrand.accent.opacity(0.45), lineWidth: 2))
+        .padding(4)
+    }
+}
+
 struct BreakOverlayView: View {
     @ObservedObject var engine: TimerEngine
     let onSkipBreak: () -> Void
