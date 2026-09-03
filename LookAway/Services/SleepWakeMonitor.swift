@@ -2,8 +2,8 @@ import AppKit
 import CoreGraphics
 import Foundation
 
-/// Tracks macOS states where the user is not actively at the screen.
-/// While away, the timer pauses; a long return (≥ break duration) restarts the work timer.
+/// Tracks macOS display, sleep, and lock state for callers that need it.
+/// The timer intentionally continues using wall-clock time while any of these states apply.
 @MainActor
 final class SleepWakeMonitor: ObservableObject {
     @Published private(set) var isSystemPaused = false

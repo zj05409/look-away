@@ -32,9 +32,6 @@ final class TimerEngine: ObservableObject {
     /// High-precision countdown; UI reads `remainingSeconds` at most once per second.
     private var internalRemaining: TimeInterval = 0
     private var lastPublishedDisplaySecond: Int = -1
-    private var wasSystemPaused = false
-    /// Wall-clock start of display off, sleep, or screen lock; cleared on return.
-    private var systemAwayStartedAt: Date?
 
     var menuBarLabel: String {
         switch phase {
@@ -219,25 +216,13 @@ final class TimerEngine: ObservableObject {
         if tickTimer == nil { startTicking() }
     }
 
-    func handleExternalPause(micActive: Bool, systemPaused: Bool, systemPauseDetail: String = "") {
-        let systemJustPaused = !wasSystemPaused && systemPaused
-        let systemJustResumed = wasSystemPaused && !systemPaused
-
-        if systemJustPaused {
-            systemAwayStartedAt = Date()
-        }
-
-        if systemJustResumed {
-            handleReturnFromSystemAway()
-        }
-
-        wasSystemPaused = systemPaused
-
+    /// Locking the screen, turning off the display, or sleeping the Mac must not
+    /// stop the schedule. On wake, the elapsed wall-clock time is deducted by the
+    /// regular timer tick. Only a call or an explicit manual pause stops it.
+    func handleExternalPause(micActive: Bool, systemPaused _: Bool, systemPauseDetail _: String = "") {
         let newDetail: String
         if micActive {
             newDetail = "Paused — call active"
-        } else if systemPaused {
-            newDetail = systemPauseDetail.isEmpty ? "Paused — away from screen" : systemPauseDetail
         } else if isManuallyPaused {
             newDetail = "Paused manually"
         } else {
@@ -251,41 +236,7 @@ final class TimerEngine: ObservableObject {
             }
         }
 
-        reevaluatePhase(micActive: micActive, systemPaused: systemPaused)
-    }
-
-    /// On return from display off, sleep, or lock: restart only if away time met the break threshold.
-    private func handleReturnFromSystemAway() {
-        defer { systemAwayStartedAt = nil }
-
-        // Once the minimum rest is complete, sleeping or locking the Mac must not
-        // bypass the explicit "Start Working" confirmation.
-        guard phase != .breakComplete else { return }
-        guard let startedAt = systemAwayStartedAt else { return }
-        let awayDuration = Date().timeIntervalSince(startedAt)
-        guard awayDuration >= config.breakDurationSeconds else { return }
-
-        restartWorkSessionAfterLongAway()
-    }
-
-    /// Away long enough to count as a break — restart work and dismiss overlay if needed.
-    private func restartWorkSessionAfterLongAway() {
-        let wasOnBreak = phase == .onBreak
-
-        if wasOnBreak {
-            appliedPenaltyMinutes = 0
-            transitionToBreakComplete()
-            return
-        }
-
-        phase = .working
-        internalRemaining = config.workDurationSeconds
-        preBreakWarningSent = false
-        publishRemainingIfDisplayChanged(force: true)
-
-        if wasOnBreak {
-            NotificationCenter.default.post(name: .lookAwayBreakEnded, object: nil)
-        }
+        reevaluatePhase(micActive: micActive)
     }
 
     func confirmEndBreakEarly() {
@@ -449,14 +400,11 @@ final class TimerEngine: ObservableObject {
         persistBreakStats()
     }
 
-    private func reevaluatePhase(micActive: Bool? = nil, systemPaused: Bool? = nil) {
+    private func reevaluatePhase(micActive: Bool? = nil) {
         let mic = micActive ?? MicrophoneMonitor.checkMicrophoneInUse()
-        let asleep = systemPaused ?? false
 
         if phase == .onBreak {
-            if asleep {
-                stopTicking()
-            } else if tickTimer == nil {
+            if tickTimer == nil {
                 startTicking()
             }
             return
@@ -467,7 +415,7 @@ final class TimerEngine: ObservableObject {
             return
         }
 
-        let shouldPause = isManuallyPaused || mic || asleep
+        let shouldPause = isManuallyPaused || mic
 
         if shouldPause {
             if phase != .paused {
