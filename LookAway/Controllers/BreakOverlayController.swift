@@ -52,6 +52,10 @@ final class BreakOverlayController: ObservableObject {
         guard timerEngine != nil else { return }
 
         inputShield.activate()
+        inputShield.onStartWorking = { [weak self] in
+            guard let engine = self?.timerEngine else { return }
+            engine.startWorkingAfterBreak()
+        }
         mountOverlayPanels()
         startKeepFrontTimer()
 
@@ -61,6 +65,7 @@ final class BreakOverlayController: ObservableObject {
     func hideOverlay() {
         stopKeepFrontTimer()
         inputShield.deactivate()
+        inputShield.onStartWorking = nil
 
         for panel in panels {
             panel.orderOut(nil)

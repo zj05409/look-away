@@ -4,6 +4,7 @@ import CoreGraphics
 @MainActor
 final class BreakInputShield {
     var onBlockedShortcut: ((String) -> Void)?
+    var onStartWorking: (() -> Void)?
 
     private var localMonitor: Any?
     private var globalMonitor: Any?
@@ -12,6 +13,10 @@ final class BreakInputShield {
         deactivate()
 
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
+            if event.type == .keyDown, (event.keyCode == 36 || event.keyCode == 49) {
+                self?.onStartWorking?()
+                return nil
+            }
             guard let self, self.shouldBlock(event) else { return event }
             self.onBlockedShortcut?("Break in progress")
             return nil

@@ -46,6 +46,15 @@ struct BreakOverlayView: View {
             }
             .padding(.horizontal, 32)
         }
+        // The completion state is an explicit user choice: tapping anywhere on
+        // the overlay is a reliable fallback when a full-screen app or display
+        // scaling makes the button difficult to target.
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if engine.phase == .breakComplete {
+                onStartWorking()
+            }
+        }
     }
 
     private var completionDisplay: some View {
@@ -91,12 +100,14 @@ struct BreakOverlayView: View {
     private var startWorkingControl: some View {
         Button(action: onStartWorking) {
             Label("开始工作", systemImage: "play.fill")
-                .font(.system(.title3, design: .rounded, weight: .semibold))
-                .padding(.horizontal, 28)
-                .padding(.vertical, 14)
+                .font(.system(.title2, design: .rounded, weight: .bold))
+                .padding(.horizontal, 36)
+                .padding(.vertical, 18)
         }
         .buttonStyle(.borderedProminent)
         .tint(LookAwayBrand.accent)
+        .keyboardShortcut(.defaultAction)
+        .frame(minWidth: 240, minHeight: 64)
     }
 }
 
