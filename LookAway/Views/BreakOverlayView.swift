@@ -15,7 +15,7 @@ struct PreBreakWarningView: View {
                 .foregroundStyle(LookAwayBrand.accent)
             Text("即将进入强制休息")
                 .font(.system(.title, design: .rounded, weight: .bold))
-            Text("还有 (countdown)")
+            Text("距离休息还有 \(countdown)")
                 .font(.system(size: 42, weight: .bold, design: .rounded))
                 .monospacedDigit()
             Text(engine.reminderMessage)
