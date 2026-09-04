@@ -73,6 +73,7 @@ CLANG_MODULE_CACHE_PATH="$MODULE_CACHE_DIR" SWIFT_MODULECACHE_PATH="$MODULE_CACH
   "$ROOT/LookAway/Services/MenuBarWindowDismisser.swift" \
   "$ROOT/LookAway/Services/MenuBarWindowBackground.swift" \
   "$ROOT/LookAway/Services/BreakInputShield.swift" \
+  "$ROOT/LookAway/Services/BreakCompletionEventWriter.swift" \
   "$ROOT/LookAway/Services/LaunchAtLoginManager.swift" \
   "$ROOT/LookAway/Views/MenuBarView.swift" \
   "$ROOT/LookAway/Views/MenuControls.swift" \

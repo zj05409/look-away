@@ -28,6 +28,7 @@ Versioned releases (tags like `v1.1.0`) keep older builds under [Releases](https
 - **Launch at login** — prompted on first launch (default: enable); change later in System Settings → General → Login Items, or set `launchAtLogin` in `config.json`
 - Pre-break warning notification (optional, off by default) with **Extend 3 minutes** action in the notification and menu bar
 - Configurable reminder text shared by the pre-break notification and full-screen break overlay
+- Writes a local `break-complete` event when a required break ends, so a local automation can send a phone reminder without polling the screen or calling an AI model
 - After the minimum break ends, the overlay waits for an explicit **Start Working** confirmation before starting the next work timer
 - Native Liquid Glass UI on macOS 26 via SwiftUI `glassEffect` (material fallback on older macOS / SDKs)
 

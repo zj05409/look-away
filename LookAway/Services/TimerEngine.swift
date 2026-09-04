@@ -372,6 +372,7 @@ final class TimerEngine: ObservableObject {
         statusDetail = "休息已达标"
         publishRemainingIfDisplayChanged(force: true)
         stopTicking()
+        BreakCompletionEventWriter.write()
     }
 
     private func transitionToWorkingAfterBreak() {
