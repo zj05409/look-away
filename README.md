@@ -92,7 +92,9 @@ git tag v1.3.0
 git push origin v1.3.0
 ```
 
-CI builds on the tag and publishes a GitHub Release with `LookAway.app.zip`.
+CI builds on the tag and publishes a GitHub Release with `LookAway.app.zip`, using the matching section of [`CHANGELOG.md`](CHANGELOG.md) as release notes.
+
+Alternatively, run the **Build** workflow manually (Actions → Build → Run workflow) with **release** checked: CI creates tag `v<VERSION>` at the selected commit and publishes the same release.
 
 ## Build with Xcode (optional)
 
