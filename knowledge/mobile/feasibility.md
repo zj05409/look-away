@@ -23,6 +23,8 @@ Can Look Away's core idea (a repeating work timer that **forces** a break by cov
 | Skip during calls | `TelephonyManager` call state, `AudioManager.mode == MODE_IN_COMMUNICATION` | Covers phone and VoIP calls |
 | Hold-to-skip + penalty | Plain Compose UI + DataStore | Same rules as `TimerEngine` |
 
+Status: **implemented** in [`android/`](../../android/) (v1.4.0) — foreground service + overlay, screen-time counting, call deferral, persisted state.
+
 Verdict: feature parity is realistic. Kotlin + Jetpack Compose, one foreground service, one overlay view. APKs can be built on the existing GitHub Actions (Ubuntu runner) and sideloaded without a store account.
 
 ## iPhone (iOS)
