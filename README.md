@@ -7,7 +7,7 @@ A native macOS menu bar app that reminds you to step away from the screen on a r
 
 ## Download (no build required)
 
-Every commit to `main` publishes a macOS app zip on the **[Latest release](https://github.com/zj05409/look-away/releases/latest)**.
+Each versioned release publishes the macOS app zip and the Android APK on the **[Latest release](https://github.com/zj05409/look-away/releases/latest)**.
 
 1. Download **[LookAway.app.zip](https://github.com/zj05409/look-away/releases/latest/download/LookAway.app.zip)**
 2. Unzip
