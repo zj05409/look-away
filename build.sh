@@ -65,6 +65,7 @@ CLANG_MODULE_CACHE_PATH="$MODULE_CACHE_DIR" SWIFT_MODULECACHE_PATH="$MODULE_CACH
   "$ROOT/LookAway/LookAwayApp.swift" \
   "$ROOT/LookAway/Models/Config.swift" \
   "$ROOT/LookAway/Models/BreakStats.swift" \
+  "$ROOT/LookAway/Models/L10n.swift" \
   "$ROOT/LookAway/Services/ConfigManager.swift" \
   "$ROOT/LookAway/Services/TimerEngine.swift" \
   "$ROOT/LookAway/Services/NotificationHandler.swift" \

@@ -15,6 +15,7 @@ final class AppViewModel: ObservableObject {
 
     init() {
         configManager = ConfigManager()
+        L10n.apply(configManager.config.language)
         timerEngine = TimerEngine(config: configManager.config)
         microphoneMonitor = MicrophoneMonitor()
         sleepWakeMonitor = SleepWakeMonitor()
@@ -33,9 +34,10 @@ final class AppViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Defer until the app/run loop is ready so the first-launch alert can present.
+        // Defer until the app/run loop is ready so the overlay and first-launch alert can present.
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            self.timerEngine.restoreInterruptedBreak()
             LaunchAtLoginManager.promptOnFirstLaunchIfNeeded(configManager: self.configManager)
         }
     }
@@ -43,6 +45,7 @@ final class AppViewModel: ObservableObject {
     private func bind() {
         configManager.$config
             .sink { [weak self] config in
+                L10n.apply(config.language)
                 self?.timerEngine.applyConfig(config)
             }
             .store(in: &cancellables)
@@ -148,9 +151,9 @@ struct MenuBarView: View {
             Spacer(minLength: 0)
 
             if timerEngine.isBreakOverlayActive {
-                LookAwayStatusChip(text: "Break")
+                LookAwayStatusChip(text: L10n.text("Break", "休息"))
             } else if timerEngine.phase == .paused {
-                LookAwayStatusChip(text: "Paused")
+                LookAwayStatusChip(text: L10n.text("Paused", "已暂停"))
             }
         }
     }
@@ -159,7 +162,7 @@ struct MenuBarView: View {
         VStack(spacing: MenuPanelMetrics.spacing) {
             HStack(spacing: MenuPanelMetrics.spacing) {
                 menuButton(
-                    title: timerEngine.isManuallyPaused ? "Resume" : "Pause",
+                    title: timerEngine.isManuallyPaused ? L10n.text("Resume", "继续") : L10n.text("Pause", "暂停"),
                     symbol: timerEngine.isManuallyPaused ? "play.fill" : "pause.fill",
                     centered: true
                 ) {
@@ -167,8 +170,8 @@ struct MenuBarView: View {
                 }
 
                 HoldToConfirmButton(
-                    title: "Restart",
-                    holdingTitle: "Keep holding…",
+                    title: L10n.text("Restart", "重新计时"),
+                    holdingTitle: L10n.text("Keep holding…", "继续按住…"),
                     systemImage: "arrow.clockwise",
                     centered: true,
                     onConfirm: { viewModel.restartTimer() }
@@ -177,8 +180,8 @@ struct MenuBarView: View {
 
             if timerEngine.phase == .onBreak {
                 HoldToConfirmButton(
-                    title: "Skip",
-                    holdingTitle: "Keep holding…",
+                    title: L10n.text("Skip", "跳过"),
+                    holdingTitle: L10n.text("Keep holding…", "继续按住…"),
                     systemImage: "forward.end.fill",
                     role: .destructive,
                     centered: true,
@@ -186,22 +189,29 @@ struct MenuBarView: View {
                 )
             } else if timerEngine.phase == .preBreakWarning {
                 HStack(spacing: MenuPanelMetrics.spacing) {
-                    menuButton(title: "Extend 3 min", symbol: "plus.circle", centered: true) {
+                    menuButton(
+                        title: L10n.text("Extend \(TimerEngine.sessionExtensionMinutes) min", "延后 \(TimerEngine.sessionExtensionMinutes) 分钟"),
+                        symbol: "plus.circle",
+                        centered: true
+                    ) {
                         viewModel.timerEngine.extendSession()
                     }
 
-                    menuButton(title: "Break", symbol: "cup.and.saucer.fill", centered: true) {
+                    menuButton(title: L10n.text("Break", "立即休息"), symbol: "cup.and.saucer.fill", centered: true) {
                         viewModel.timerEngine.startBreakNow()
                     }
                 }
             } else {
-                menuButton(title: "Break", symbol: "cup.and.saucer.fill", centered: true) {
+                menuButton(title: L10n.text("Break", "立即休息"), symbol: "cup.and.saucer.fill", centered: true) {
                     viewModel.timerEngine.startBreakNow()
                 }
             }
 
             if timerEngine.pendingPenaltyMinutes > 0 && !timerEngine.isBreakOverlayActive {
-                Text("Next break +\(timerEngine.pendingPenaltyMinutes) min from skip")
+                Text(L10n.text(
+                    "Next break +\(timerEngine.pendingPenaltyMinutes) min from skip",
+                    "因跳过休息，下次休息 +\(timerEngine.pendingPenaltyMinutes) 分钟"
+                ))
                     .font(MenuPanelMetrics.controlFont)
                     .foregroundStyle(.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -215,7 +225,7 @@ struct MenuBarView: View {
         Button {
             viewModel.quit()
         } label: {
-            Label("Quit", systemImage: "power")
+            Label(L10n.text("Quit", "退出"), systemImage: "power")
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(MenuActionButtonStyle(role: .destructive))

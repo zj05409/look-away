@@ -7,6 +7,7 @@ struct AppConfig: Codable, Equatable {
     var skipPenaltyMinutes: Int
     var launchAtLogin: Bool
     var reminderMessage: String
+    var language: String
 
     static let defaults = AppConfig(
         workDurationMinutes: 120,
@@ -14,7 +15,8 @@ struct AppConfig: Codable, Equatable {
         preBreakWarningMinutes: 0,
         skipPenaltyMinutes: 5,
         launchAtLogin: true,
-        reminderMessage: "喝杯水，并且去有光照的地方慢跑五分钟，回来冷水冲脸"
+        reminderMessage: "喝杯水，并且去有光照的地方慢跑五分钟，回来冷水冲脸",
+        language: "zh"
     )
 
     enum CodingKeys: String, CodingKey {
@@ -24,6 +26,7 @@ struct AppConfig: Codable, Equatable {
         case skipPenaltyMinutes
         case launchAtLogin
         case reminderMessage
+        case language
     }
 
     init(
@@ -32,7 +35,8 @@ struct AppConfig: Codable, Equatable {
         preBreakWarningMinutes: Int,
         skipPenaltyMinutes: Int,
         launchAtLogin: Bool,
-        reminderMessage: String
+        reminderMessage: String,
+        language: String
     ) {
         self.workDurationMinutes = workDurationMinutes
         self.breakDurationMinutes = breakDurationMinutes
@@ -40,6 +44,7 @@ struct AppConfig: Codable, Equatable {
         self.skipPenaltyMinutes = skipPenaltyMinutes
         self.launchAtLogin = launchAtLogin
         self.reminderMessage = reminderMessage
+        self.language = language
     }
 
     init(from decoder: Decoder) throws {
@@ -50,6 +55,7 @@ struct AppConfig: Codable, Equatable {
         skipPenaltyMinutes = try container.decodeIfPresent(Int.self, forKey: .skipPenaltyMinutes) ?? Self.defaults.skipPenaltyMinutes
         launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? Self.defaults.launchAtLogin
         reminderMessage = try container.decodeIfPresent(String.self, forKey: .reminderMessage) ?? Self.defaults.reminderMessage
+        language = try container.decodeIfPresent(String.self, forKey: .language) ?? Self.defaults.language
     }
 
     var workDurationSeconds: TimeInterval {
@@ -74,6 +80,10 @@ struct AppConfig: Codable, Equatable {
         copy.reminderMessage = trimmedMessage.isEmpty
             ? Self.defaults.reminderMessage
             : String(trimmedMessage.prefix(500))
+        let normalizedLanguage = copy.language.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        copy.language = L10n.Language(rawValue: normalizedLanguage) == nil
+            ? Self.defaults.language
+            : normalizedLanguage
         return copy
     }
 }

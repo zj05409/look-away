@@ -25,6 +25,8 @@
 		A10000000000000E /* MenuControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000000000010 /* MenuControls.swift */; };
 		A10000000000000C /* GlassStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000E /* GlassStyles.swift */; };
 		A100000000000015 /* LookAwayDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000000000015 /* LookAwayDesign.swift */; };
+		A100000000000017 /* BreakCompletionEventWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000000000017 /* BreakCompletionEventWriter.swift */; };
+		A100000000000018 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200000000000018 /* L10n.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +49,8 @@
 		A200000000000010 /* MenuControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuControls.swift; sourceTree = "<group>"; };
 		A20000000000000E /* GlassStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassStyles.swift; sourceTree = "<group>"; };
 		A200000000000015 /* LookAwayDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookAwayDesign.swift; sourceTree = "<group>"; };
+		A200000000000017 /* BreakCompletionEventWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakCompletionEventWriter.swift; sourceTree = "<group>"; };
+		A200000000000018 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		A20000000000000C /* LookAway.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LookAway.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -95,6 +99,7 @@
 			children = (
 				A200000000000002 /* Config.swift */,
 				A200000000000011 /* BreakStats.swift */,
+				A200000000000018 /* L10n.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -111,6 +116,7 @@
 				A200000000000016 /* MenuBarWindowBackground.swift */,
 				A200000000000013 /* BreakInputShield.swift */,
 				A200000000000007 /* LaunchAtLoginManager.swift */,
+				A200000000000017 /* BreakCompletionEventWriter.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -210,6 +216,8 @@
 				A10000000000000C /* GlassStyles.swift in Sources */,
 				A10000000000000E /* MenuControls.swift in Sources */,
 				A100000000000015 /* LookAwayDesign.swift in Sources */,
+				A100000000000017 /* BreakCompletionEventWriter.swift in Sources */,
+				A100000000000018 /* L10n.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,8 +268,8 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = io.github.dvdcarlomagno.lookaway;
+				MARKETING_VERSION = 1.3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.zj05409.lookaway;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -282,8 +290,8 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = io.github.dvdcarlomagno.lookaway;
+				MARKETING_VERSION = 1.3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.zj05409.lookaway;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
