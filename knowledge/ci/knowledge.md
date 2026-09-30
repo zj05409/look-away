@@ -10,7 +10,7 @@
 
 ## Install from CI
 
-`https://github.com/dvdcarlomagno/look-away/releases/latest/download/LookAway.app.zip` → unzip → Applications
+`https://github.com/zj05409/look-away/releases/latest/download/LookAway.app.zip` → unzip → Applications
 
 ## Local zip
 

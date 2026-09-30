@@ -91,6 +91,6 @@ jobs:
           Bundle version: ${VERSION} (\`${SHA}\`)."
           gh release create "$TAG" \
             "$ZIP#LookAway.app.zip" \
-            --title "Look Away ${TAG}" \
+            --title "Look Away ${VERSION}" \
             --notes "$NOTES" \
             --verify-tag
