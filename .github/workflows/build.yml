@@ -43,6 +43,9 @@ jobs:
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
           test -f "$ZIP"
+          # Releases serve the file under its own name; `gh release create file#label`
+          # only sets a display label, so stage a copy with the stable download name.
+          cp "$ZIP" build/LookAway.app.zip
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -72,7 +75,7 @@ jobs:
           gh release view latest >/dev/null 2>&1 \
             && gh release delete latest --yes --cleanup-tag || true
           gh release create latest \
-            "$ZIP#LookAway.app.zip" \
+            "build/LookAway.app.zip" \
             --title "Latest (${VERSION})" \
             --notes "$NOTES" \
             --latest
@@ -104,8 +107,17 @@ jobs:
           3. First open: right-click → **Open** if Gatekeeper blocks it
 
           Bundle version: ${VERSION} (\`${SHA}\`)."
-          gh release create "$TAG" \
-            "$ZIP#LookAway.app.zip" \
-            --title "Look Away ${VERSION}" \
-            --notes "$NOTES" \
-            "${TAG_ARGS[@]}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # Re-running a release refreshes its zip and notes instead of failing.
+            gh release upload "$TAG" build/LookAway.app.zip --clobber
+            gh release view "$TAG" --json assets --jq '.assets[].name' \
+              | grep -vx 'LookAway.app.zip' \
+              | while read -r OLD; do gh release delete-asset "$TAG" "$OLD" --yes; done
+            gh release edit "$TAG" --title "Look Away ${VERSION}" --notes "$NOTES"
+          else
+            gh release create "$TAG" \
+              "build/LookAway.app.zip" \
+              --title "Look Away ${VERSION}" \
+              --notes "$NOTES" \
+              "${TAG_ARGS[@]}"
+          fi
