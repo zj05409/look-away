@@ -16,6 +16,21 @@ Every commit to `main` publishes a macOS app zip on the **[Latest release](https
 
 Versioned releases (tags like `v1.3.0`) keep older builds under [Releases](https://github.com/zj05409/look-away/releases). CI also attaches the zip to each [Actions run](https://github.com/zj05409/look-away/actions/workflows/build.yml).
 
+## Android
+
+A phone version lives in [`android/`](android/). Download **[LookAway.apk](https://github.com/zj05409/look-away/releases/latest/download/LookAway.apk)** on the phone and allow installing from that source (Android 8.0+).
+
+- Counts only **screen-on, unlocked** time toward the next break (default 30 min); putting the phone away for a full break length starts a fresh session
+- When a break is due, a full-screen black overlay covers every app until the break ends (default 5 min); Back is blocked
+- Hold **Skip** 11 s to end early (penalty added to the next break); after the break, tap **Start**
+- Breaks wait for an active phone/VoIP call to end
+- Ongoing countdown notification with **Pause**, **Break now**, **Extend 3 min**; survives app kills and reboots
+- Chinese / English UI; settings are in the app
+
+First launch: grant **Display over other apps** (required), notifications, and "ignore battery optimization". On Xiaomi / Huawei / OPPO / vivo, also allow auto-start and background running in system settings.
+
+Build locally with the Android SDK: `cd android && ./gradlew assembleRelease`. CI signs release APKs with the key in the repository secrets `LOOKAWAY_KEYSTORE_BASE64`, `LOOKAWAY_KEYSTORE_PASSWORD`, `LOOKAWAY_KEY_ALIAS`, `LOOKAWAY_KEY_PASSWORD`; without them it uses the runner's debug key, which changes between builds, so each update must be installed after uninstalling the previous one.
+
 ## Features
 
 - Menu bar countdown timer with phase icon

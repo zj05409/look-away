@@ -2,6 +2,18 @@
 
 Release notes for tagged versions. CI copies the section matching `VERSION` into the GitHub Release.
 
+## 1.4.0
+
+- **New: Look Away for Android** (`LookAway.apk`, Android 8.0+). Screen-on, unlocked time counts toward the next break; when it is due, a full-screen black overlay covers every app until the break ends.
+  - Hold **Skip** for 11 seconds to end a break early; the penalty is added to the next break.
+  - After the minimum break, tap **Start** to begin the next session.
+  - Breaks wait for an active phone or VoIP call to end.
+  - Putting the phone away for a full break length restarts the session.
+  - Ongoing countdown notification with Pause, Break now, and Extend 3 min.
+  - The schedule survives the app being killed and phone reboots.
+  - Chinese and English UI; settings are in the app.
+- CI builds, unit-tests, and attaches the APK to every release.
+
 ## 1.3.0
 
 - **Breaks survive quitting or killing the app** — an in-progress break (or one waiting for "Start Working") is saved to `~/.config/look-away/session.json`; relaunching restores the overlay with the remaining time.
