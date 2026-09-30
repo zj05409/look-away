@@ -71,6 +71,8 @@ jobs:
           3. Drag \`LookAway.app\` into **/Applications**
           4. First open: right-click → **Open** if macOS Gatekeeper blocks it
 
+          **Android**: download \`LookAway.apk\` on the phone and allow installing from this source.
+
           Version in this build: **${VERSION}** (\`${SHA}\`)."
           gh release view latest >/dev/null 2>&1 \
             && gh release delete latest --yes --cleanup-tag || true
@@ -106,12 +108,14 @@ jobs:
           2. Unzip and drag \`LookAway.app\` into **/Applications**
           3. First open: right-click → **Open** if Gatekeeper blocks it
 
+          **Android**: download \`LookAway.apk\` on the phone and allow installing from this source.
+
           Bundle version: ${VERSION} (\`${SHA}\`)."
           if gh release view "$TAG" >/dev/null 2>&1; then
             # Re-running a release refreshes its zip and notes instead of failing.
             gh release upload "$TAG" build/LookAway.app.zip --clobber
             gh release view "$TAG" --json assets --jq '.assets[].name' \
-              | grep -vx 'LookAway.app.zip' \
+              | grep -vx -e 'LookAway.app.zip' -e 'LookAway.apk' \
               | while read -r OLD; do gh release delete-asset "$TAG" "$OLD" --yes; done
             gh release edit "$TAG" --title "Look Away ${VERSION}" --notes "$NOTES"
           else
@@ -121,3 +125,71 @@ jobs:
               --notes "$NOTES" \
               "${TAG_ARGS[@]}"
           fi
+
+  android:
+    name: Android app
+    # Runs after the macOS job so the GitHub Release exists before the APK is attached.
+    needs: macos
+    runs-on: ubuntu-latest
+    env:
+      LOOKAWAY_KEYSTORE_BASE64: ${{ secrets.LOOKAWAY_KEYSTORE_BASE64 }}
+      LOOKAWAY_KEYSTORE_PASSWORD: ${{ secrets.LOOKAWAY_KEYSTORE_PASSWORD }}
+      LOOKAWAY_KEY_ALIAS: ${{ secrets.LOOKAWAY_KEY_ALIAS }}
+      LOOKAWAY_KEY_PASSWORD: ${{ secrets.LOOKAWAY_KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Decode release signing key
+        if: env.LOOKAWAY_KEYSTORE_BASE64 != ''
+        run: |
+          echo "$LOOKAWAY_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/lookaway.jks"
+          echo "LOOKAWAY_KEYSTORE_FILE=$RUNNER_TEMP/lookaway.jks" >> "$GITHUB_ENV"
+
+      - name: Test and build APK
+        working-directory: android
+        run: ./gradlew --no-daemon --stacktrace testDebugUnitTest assembleRelease -PversionCode="$(git rev-list --count HEAD)"
+
+      - name: Resolve artifact names
+        id: meta
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          SHA="$(git rev-parse --short HEAD)"
+          mkdir -p build
+          cp android/app/build/outputs/apk/release/app-release.apk build/LookAway.apk
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LookAway-android-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.sha }}
+          path: build/LookAway.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Attach APK to latest release (main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload latest build/LookAway.apk --clobber
+
+      - name: Attach APK to versioned release (tag or manual)
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="v${{ steps.meta.outputs.version }}"
+          fi
+          gh release upload "$TAG" build/LookAway.apk --clobber

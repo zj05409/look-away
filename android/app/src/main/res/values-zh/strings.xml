@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tagline">按时放下手机。亮屏使用的时间会累计到下一次休息；休息时全屏遮挡所有应用，直到休息结束。</string>
+    <string name="default_reminder">放下手机，看看远处，喝杯水，起来活动一下</string>
+
+    <string name="status_working">专注中</string>
+    <string name="status_idle">未在使用手机，计时暂停</string>
+    <string name="status_paused">已暂停</string>
+    <string name="status_waiting_for_call">通话中，通话结束后开始休息</string>
+    <string name="status_break">让眼睛休息一下</string>
+    <string name="status_stopped">Look Away 未开启</string>
+    <string name="stopped_detail">开启后开始累计屏幕使用时间。</string>
+    <string name="until_break">距离下次休息</string>
+    <string name="remaining_value">剩余 %1$s</string>
+    <string name="counting_explainer">只在手机解锁使用时计时。放下手机超过一次休息的时长，会重新开始计时。</string>
+    <string name="pending_penalty">因跳过休息，下次休息 +%1$d 分钟</string>
+
+    <string name="break_complete">休息已达标</string>
+    <string name="break_complete_detail">准备好后，再开始下一轮</string>
+    <string name="start_working">开始使用</string>
+    <string name="skip">跳过</string>
+    <string name="keep_holding">继续按住…</string>
+
+    <string name="pause">暂停</string>
+    <string name="resume">继续</string>
+    <string name="break_now">立即休息</string>
+    <string name="extend">延后 3 分钟</string>
+    <string name="restart_hold">重新计时（按住 11 秒）</string>
+    <string name="stop">关闭 Look Away</string>
+    <string name="enable">开启 Look Away</string>
+
+    <plurals name="warning_title">
+        <item quantity="other">%1$d 分钟后强制休息</item>
+    </plurals>
+
+    <string name="channel_status">计时</string>
+    <string name="channel_alerts">休息提醒</string>
+
+    <string name="section_permissions">权限</string>
+    <string name="permission_overlay">显示在其他应用上层</string>
+    <string name="permission_notifications">通知</string>
+    <string name="permission_battery">忽略电池优化</string>
+    <string name="permission_granted">已授权</string>
+    <string name="permission_overlay_missing">必需——没有它无法显示休息界面</string>
+    <string name="permission_notifications_missing">建议——显示倒计时和休息提醒</string>
+    <string name="permission_battery_missing">建议——防止后台计时被系统杀掉</string>
+    <string name="grant">去授权</string>
+    <string name="oem_hint">小米、华为、OPPO、vivo 等手机还需要在系统设置里允许 Look Away 自启动和后台运行，否则系统可能会停止计时。</string>
+
+    <string name="section_settings">设置</string>
+    <string name="setting_work">使用多久后休息（分钟）</string>
+    <string name="setting_break">休息时长（分钟）</string>
+    <string name="setting_warning">提前提醒（分钟，0 为关闭）</string>
+    <string name="setting_penalty">跳过罚时（分钟）</string>
+    <string name="setting_reminder">提醒文字</string>
+    <string name="save">保存</string>
+    <string name="settings_saved">已保存</string>
+
+    <string name="about_text">跳过休息（按住 11 秒）会把罚时加到下一次休息。通话时休息会等到通话结束。本应用是 Look Away macOS 菜单栏应用的手机版。</string>
+</resources>
