@@ -20,13 +20,11 @@ else
   GIT_SHA="local"
 fi
 
-# Detect Apple Silicon vs Intel
-ARCH="$(uname -m)"
-if [[ "$ARCH" == "arm64" ]]; then
-  TARGET="arm64-apple-macosx14.0"
-else
-  TARGET="x86_64-apple-macosx14.0"
-fi
+# Build a universal (Apple Silicon + Intel) binary by default so release zips
+# run on every supported Mac. Set LOOKAWAY_ARCHS="arm64" for a faster local build.
+ARCHS="${LOOKAWAY_ARCHS:-arm64 x86_64}"
+HOST_ARCH="$(uname -m)"
+TARGET="${HOST_ARCH}-apple-macosx14.0"
 
 SWIFT_FLAGS=()
 GLASS_PROBE="$(mktemp /tmp/lookaway_glass_probe.XXXXXX.swift)"
@@ -45,42 +43,52 @@ else
 fi
 rm -f "$GLASS_PROBE"
 
-echo "Building $APP_NAME for $TARGET ..."
-
 rm -rf "$APP_BUNDLE"
 mkdir -p "$MACOS_DIR"
 
-CLANG_MODULE_CACHE_PATH="$MODULE_CACHE_DIR" SWIFT_MODULECACHE_PATH="$MODULE_CACHE_DIR" swiftc \
-  -o "$MACOS_DIR/$APP_NAME" \
-  -target "$TARGET" \
-  -sdk "$SDK" \
-  "${SWIFT_FLAGS[@]+"${SWIFT_FLAGS[@]}"}" \
-  -framework AppKit \
-  -framework SwiftUI \
-  -framework Combine \
-  -framework CoreAudio \
-  -framework CoreGraphics \
-  -framework UserNotifications \
-  -framework ServiceManagement \
-  "$ROOT/LookAway/LookAwayApp.swift" \
-  "$ROOT/LookAway/Models/Config.swift" \
-  "$ROOT/LookAway/Models/BreakStats.swift" \
-  "$ROOT/LookAway/Services/ConfigManager.swift" \
-  "$ROOT/LookAway/Services/TimerEngine.swift" \
-  "$ROOT/LookAway/Services/NotificationHandler.swift" \
-  "$ROOT/LookAway/Services/MicrophoneMonitor.swift" \
-  "$ROOT/LookAway/Services/SleepWakeMonitor.swift" \
-  "$ROOT/LookAway/Services/MenuBarWindowDismisser.swift" \
-  "$ROOT/LookAway/Services/MenuBarWindowBackground.swift" \
-  "$ROOT/LookAway/Services/BreakInputShield.swift" \
-  "$ROOT/LookAway/Services/BreakCompletionEventWriter.swift" \
-  "$ROOT/LookAway/Services/LaunchAtLoginManager.swift" \
-  "$ROOT/LookAway/Views/MenuBarView.swift" \
-  "$ROOT/LookAway/Views/MenuControls.swift" \
-  "$ROOT/LookAway/Views/LookAwayDesign.swift" \
-  "$ROOT/LookAway/Views/GlassStyles.swift" \
-  "$ROOT/LookAway/Views/BreakOverlayView.swift" \
-  "$ROOT/LookAway/Controllers/BreakOverlayController.swift"
+SLICES=()
+for ARCH in $ARCHS; do
+  ARCH_TARGET="${ARCH}-apple-macosx14.0"
+  SLICE="$BUILD_DIR/$APP_NAME-$ARCH"
+  echo "Building $APP_NAME for $ARCH_TARGET ..."
+  CLANG_MODULE_CACHE_PATH="$MODULE_CACHE_DIR" SWIFT_MODULECACHE_PATH="$MODULE_CACHE_DIR" swiftc \
+    -o "$SLICE" \
+    -target "$ARCH_TARGET" \
+    -sdk "$SDK" \
+    "${SWIFT_FLAGS[@]+"${SWIFT_FLAGS[@]}"}" \
+    -framework AppKit \
+    -framework SwiftUI \
+    -framework Combine \
+    -framework CoreAudio \
+    -framework CoreGraphics \
+    -framework UserNotifications \
+    -framework ServiceManagement \
+    "$ROOT/LookAway/LookAwayApp.swift" \
+    "$ROOT/LookAway/Models/Config.swift" \
+    "$ROOT/LookAway/Models/BreakStats.swift" \
+    "$ROOT/LookAway/Models/L10n.swift" \
+    "$ROOT/LookAway/Services/ConfigManager.swift" \
+    "$ROOT/LookAway/Services/TimerEngine.swift" \
+    "$ROOT/LookAway/Services/NotificationHandler.swift" \
+    "$ROOT/LookAway/Services/MicrophoneMonitor.swift" \
+    "$ROOT/LookAway/Services/SleepWakeMonitor.swift" \
+    "$ROOT/LookAway/Services/MenuBarWindowDismisser.swift" \
+    "$ROOT/LookAway/Services/MenuBarWindowBackground.swift" \
+    "$ROOT/LookAway/Services/BreakInputShield.swift" \
+    "$ROOT/LookAway/Services/BreakCompletionEventWriter.swift" \
+    "$ROOT/LookAway/Services/LaunchAtLoginManager.swift" \
+    "$ROOT/LookAway/Views/MenuBarView.swift" \
+    "$ROOT/LookAway/Views/MenuControls.swift" \
+    "$ROOT/LookAway/Views/LookAwayDesign.swift" \
+    "$ROOT/LookAway/Views/GlassStyles.swift" \
+    "$ROOT/LookAway/Views/BreakOverlayView.swift" \
+    "$ROOT/LookAway/Controllers/BreakOverlayController.swift"
+  SLICES+=("$SLICE")
+done
+
+lipo -create "${SLICES[@]}" -output "$MACOS_DIR/$APP_NAME"
+rm -f "${SLICES[@]}"
+echo "Architectures: $(lipo -archs "$MACOS_DIR/$APP_NAME")"
 
 cp "$ROOT/LookAway/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
 

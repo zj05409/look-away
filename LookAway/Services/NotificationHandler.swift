@@ -6,10 +6,14 @@ enum LookAwayNotification {
     static let extendSessionAction = "look-away-extend-session"
     static let preBreakRequestID = "look-away-pre-break"
 
+    @MainActor
     static func registerCategories() {
         let extend = UNNotificationAction(
             identifier: extendSessionAction,
-            title: "Extend 3 minutes",
+            title: L10n.text(
+                "Extend \(TimerEngine.sessionExtensionMinutes) minutes",
+                "延后 \(TimerEngine.sessionExtensionMinutes) 分钟"
+            ),
             options: []
         )
         let category = UNNotificationCategory(

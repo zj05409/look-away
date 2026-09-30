@@ -6,7 +6,7 @@ Thank you for considering a contribution. This project is a native macOS menu ba
 
 1. Read the [README](README.md) for build instructions and architecture overview.
 2. Skim [`knowledge/INDEX.md`](knowledge/INDEX.md) for UI and overlay conventions.
-3. Search [existing issues](https://github.com/dvdcarlomagno/look-away/issues) to avoid duplicate work.
+3. Search [existing issues](https://github.com/zj05409/look-away/issues) to avoid duplicate work.
 4. For large changes, open an issue first to discuss the approach.
 
 ## Development setup
@@ -39,7 +39,7 @@ The script prints whether **Liquid Glass** is enabled (`LIQUID_GLASS` compile fl
 | Path | Purpose |
 |------|---------|
 | `LookAway/LookAwayApp.swift` | App entry point, menu bar extra |
-| `LookAway/Models/` | Data models (`AppConfig`, `BreakStats`) |
+| `LookAway/Models/` | Data models (`AppConfig`, `BreakStats`, `BreakSession`) and `L10n` strings |
 | `LookAway/Services/` | Timer, config, monitors (mic, sleep), launch-at-login, input shield |
 | `LookAway/Views/` | SwiftUI UI — menu panel, break overlay, glass styles, controls |
 | `LookAway/Controllers/` | `NSPanel` overlay controller for multi-display breaks |
@@ -62,7 +62,8 @@ The script prints whether **Liquid Glass** is enabled (`LIQUID_GLASS` compile fl
 | `MenuBarView.swift` | Menu bar panel |
 | `MenuControls.swift` | Hold-to-confirm buttons |
 | `MenuBarWindowBackground.swift` | Clears MenuBarExtra chrome (prevents double border) |
-| `BreakStats.swift` | Pending skip penalty persistence (`stats.json`) |
+| `BreakStats.swift` | Pending skip penalty (`stats.json`) and in-progress break (`session.json`) persistence |
+| `L10n.swift` | Chinese / English UI text; wrap new user-facing strings in `L10n.text(english, chinese)` |
 | `LaunchAtLoginManager.swift` | First-launch prompt + login item registration |
 | `MenuBarWindowDismisser.swift` | Closes menu bar window when break starts |
 
@@ -96,8 +97,9 @@ The script prints whether **Liquid Glass** is enabled (`LIQUID_GLASS` compile fl
    - Hold **Skip** on overlay or menu ends break early (penalty applied)
    - Menu bar closes and disables during break
    - Menu panel corners look uniform (no double-radius / system chrome peeking)
-   - First-launch launch-at-login prompt (reset `defaults delete io.github.dvdcarlomagno.lookaway lookAway.hasPromptedLaunchAtLogin` to retest)
-   - `config.json` edits reload while running
+   - First-launch launch-at-login prompt (reset `defaults delete io.github.zj05409.lookaway lookAway.hasPromptedLaunchAtLogin` to retest)
+   - `config.json` edits reload while running (including `language`)
+   - Quit/kill the app during a break (`killall LookAway`) and relaunch: the break resumes
 5. Open a PR describing **what** changed and **why**.
 6. Link any related issues.
 

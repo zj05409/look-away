@@ -32,22 +32,24 @@ final class TimerEngine: ObservableObject {
     /// High-precision countdown; UI reads `remainingSeconds` at most once per second.
     private var internalRemaining: TimeInterval = 0
     private var lastPublishedDisplaySecond: Int = -1
+    /// Tracks why the timer is paused without parsing the (localized) status text.
+    private var pausedForCall = false
 
     var menuBarLabel: String {
         switch phase {
         case .onBreak:
-            return "Break: \(menuBarDisplayTime)"
+            return L10n.text("Break: \(menuBarDisplayTime)", "休息中：\(menuBarDisplayTime)")
         case .breakComplete:
-            return "休息已达标，等待开始工作"
+            return L10n.text("Break complete — waiting to start work", "休息已达标，等待开始工作")
         case .paused:
-            if statusDetail.contains("call") {
-                return "Call active"
+            if pausedForCall {
+                return L10n.text("Call active", "通话中")
             }
-            return "Paused"
+            return L10n.text("Paused", "已暂停")
         case .preBreakWarning:
-            return "Break soon: \(menuBarDisplayTime)"
+            return L10n.text("Break soon: \(menuBarDisplayTime)", "即将休息：\(menuBarDisplayTime)")
         case .working:
-            return "\(menuBarDisplayTime) left"
+            return L10n.text("\(menuBarDisplayTime) left", "剩余 \(menuBarDisplayTime)")
         }
     }
 
@@ -62,15 +64,15 @@ final class TimerEngine: ObservableObject {
     var phaseDisplayName: String {
         switch phase {
         case .working:
-            return "Focus session"
+            return L10n.text("Focus session", "专注中")
         case .preBreakWarning:
-            return "Break approaching"
+            return L10n.text("Break approaching", "即将休息")
         case .onBreak:
-            return "Rest your eyes"
+            return L10n.text("Rest your eyes", "让眼睛休息一下")
         case .breakComplete:
-            return "休息已达标"
+            return L10n.text("Break complete", "休息已达标")
         case .paused:
-            return "Paused"
+            return L10n.text("Paused", "已暂停")
         }
     }
 
@@ -96,7 +98,7 @@ final class TimerEngine: ObservableObject {
         case .preBreakWarning:
             return config.preBreakWarningSeconds
         case .onBreak:
-            return config.breakDurationSeconds + TimeInterval(appliedPenaltyMinutes * 60)
+            return currentBreakTotalSeconds
         case .breakComplete:
             return 0
         case .paused:
@@ -116,6 +118,11 @@ final class TimerEngine: ObservableObject {
 
     var reminderMessage: String {
         config.reminderMessage
+    }
+
+    /// Configured break plus any skip penalty applied to the current break.
+    private var currentBreakTotalSeconds: TimeInterval {
+        config.breakDurationSeconds + TimeInterval(appliedPenaltyMinutes * 60)
     }
 
     init(config: AppConfig) {
@@ -138,11 +145,14 @@ final class TimerEngine: ObservableObject {
                 internalRemaining = min(internalRemaining, config.workDurationSeconds)
             }
         case .onBreak:
+            // Include the applied skip penalty: reloading config.json mid-break
+            // (for any key) must not silently cut the penalty minutes.
             if config.breakDurationMinutes != previous.breakDurationMinutes {
-                internalRemaining = config.breakDurationSeconds
+                internalRemaining = currentBreakTotalSeconds
             } else {
-                internalRemaining = min(internalRemaining, config.breakDurationSeconds)
+                internalRemaining = min(internalRemaining, currentBreakTotalSeconds)
             }
+            persistBreakSession()
         case .breakComplete:
             break
         case .preBreakWarning:
@@ -155,6 +165,42 @@ final class TimerEngine: ObservableObject {
             break
         }
         publishRemainingIfDisplayChanged(force: true)
+    }
+
+    /// Brings back a break that was still running (or awaiting confirmation) when
+    /// the app last quit, crashed, or was killed. Call once observers are installed
+    /// so the overlay controller receives the break-started notification.
+    func restoreInterruptedBreak() {
+        guard let session = BreakSessionStore.load() else { return }
+
+        appliedPenaltyMinutes = max(0, session.appliedPenaltyMinutes)
+        isManuallyPaused = false
+        pausedForCall = false
+        preBreakWarningSent = false
+        statusDetail = ""
+
+        let remaining = session.endsAt.timeIntervalSinceNow
+        if session.phase == .onBreak, remaining > 0 {
+            phase = .onBreak
+            internalRemaining = min(remaining, currentBreakTotalSeconds)
+            publishRemainingIfDisplayChanged(force: true)
+            if tickTimer == nil { startTicking() }
+            NotificationCenter.default.post(name: .lookAwayBreakStarted, object: nil)
+            return
+        }
+
+        if session.phase == .onBreak {
+            // The break elapsed while the app was not running: it still needs
+            // the explicit "Start Working" confirmation.
+            transitionToBreakComplete()
+        } else {
+            phase = .breakComplete
+            internalRemaining = 0
+            statusDetail = L10n.text("Break complete", "休息已达标")
+            publishRemainingIfDisplayChanged(force: true)
+            stopTicking()
+        }
+        NotificationCenter.default.post(name: .lookAwayBreakStarted, object: nil)
     }
 
     func setManualPause(_ paused: Bool) {
@@ -212,6 +258,7 @@ final class TimerEngine: ObservableObject {
         preBreakWarningSent = false
         isManuallyPaused = false
         statusDetail = ""
+        BreakSessionStore.clear()
         publishRemainingIfDisplayChanged(force: true)
         if tickTimer == nil { startTicking() }
     }
@@ -220,11 +267,12 @@ final class TimerEngine: ObservableObject {
     /// stop the schedule. On wake, the elapsed wall-clock time is deducted by the
     /// regular timer tick. Only a call or an explicit manual pause stops it.
     func handleExternalPause(micActive: Bool, systemPaused _: Bool, systemPauseDetail _: String = "") {
+        pausedForCall = micActive
         let newDetail: String
         if micActive {
-            newDetail = "Paused — call active"
+            newDetail = L10n.text("Paused — call active", "已暂停 — 通话中")
         } else if isManuallyPaused {
-            newDetail = "Paused manually"
+            newDetail = L10n.text("Paused manually", "已手动暂停")
         } else {
             newDetail = ""
         }
@@ -297,9 +345,9 @@ final class TimerEngine: ObservableObject {
         case .onBreak, .working, .preBreakWarning:
             newText = menuBarDisplayTime
         case .breakComplete:
-            newText = "Ready"
+            newText = L10n.text("Ready", "待开始")
         case .paused:
-            newText = statusDetail.contains("call") ? "Call active" : "Paused"
+            newText = pausedForCall ? L10n.text("Call active", "通话中") : L10n.text("Paused", "已暂停")
         }
         if force || newText != menuBarCompactText {
             menuBarCompactText = newText
@@ -336,7 +384,8 @@ final class TimerEngine: ObservableObject {
     private func triggerBreakOrPauseForCall() {
         if MicrophoneMonitor.checkMicrophoneInUse() {
             phase = .paused
-            statusDetail = "Paused — call active"
+            pausedForCall = true
+            statusDetail = L10n.text("Paused — call active", "已暂停 — 通话中")
             internalRemaining = 0
             publishRemainingIfDisplayChanged(force: true)
             stopTicking()
@@ -358,10 +407,11 @@ final class TimerEngine: ObservableObject {
             pendingPenaltyMinutes = 0
             persistBreakStats()
         }
-        internalRemaining = config.breakDurationSeconds + TimeInterval(appliedPenaltyMinutes * 60)
+        internalRemaining = currentBreakTotalSeconds
         preBreakWarningSent = false
         statusDetail = ""
         publishRemainingIfDisplayChanged(force: true)
+        persistBreakSession()
         if tickTimer == nil { startTicking() }
         NotificationCenter.default.post(name: .lookAwayBreakStarted, object: nil)
     }
@@ -369,8 +419,9 @@ final class TimerEngine: ObservableObject {
     private func transitionToBreakComplete() {
         phase = .breakComplete
         internalRemaining = 0
-        statusDetail = "休息已达标"
+        statusDetail = L10n.text("Break complete", "休息已达标")
         publishRemainingIfDisplayChanged(force: true)
+        persistBreakSession()
         stopTicking()
         BreakCompletionEventWriter.write()
     }
@@ -381,6 +432,7 @@ final class TimerEngine: ObservableObject {
         preBreakWarningSent = false
         statusDetail = ""
         appliedPenaltyMinutes = 0
+        BreakSessionStore.clear()
         publishRemainingIfDisplayChanged(force: true)
         if tickTimer == nil { startTicking() }
         NotificationCenter.default.post(name: .lookAwayBreakEnded, object: nil)
@@ -392,6 +444,25 @@ final class TimerEngine: ObservableObject {
 
     private func persistBreakStats() {
         BreakStatsStore.save(BreakStats(pendingPenaltyMinutes: pendingPenaltyMinutes))
+    }
+
+    private func persistBreakSession() {
+        switch phase {
+        case .onBreak:
+            BreakSessionStore.save(BreakSession(
+                phase: .onBreak,
+                endsAt: Date().addingTimeInterval(max(0, internalRemaining)),
+                appliedPenaltyMinutes: appliedPenaltyMinutes
+            ))
+        case .breakComplete:
+            BreakSessionStore.save(BreakSession(
+                phase: .breakComplete,
+                endsAt: Date(),
+                appliedPenaltyMinutes: appliedPenaltyMinutes
+            ))
+        case .working, .preBreakWarning, .paused:
+            break
+        }
     }
 
     private func recordEarlyAbort() {
@@ -447,11 +518,15 @@ final class TimerEngine: ObservableObject {
         preBreakWarningSent = true
         let warningMinutes = config.preBreakWarningMinutes
         let reminderMessage = config.reminderMessage
+        let title = L10n.text(
+            "Mandatory break in \(warningMinutes) min",
+            "\(warningMinutes) 分钟后强制休息"
+        )
 
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
             guard granted else { return }
             let content = UNMutableNotificationContent()
-            content.title = "\(warningMinutes) 分钟后强制休息"
+            content.title = title
             content.body = reminderMessage
             content.categoryIdentifier = LookAwayNotification.preBreakCategory
             let request = UNNotificationRequest(

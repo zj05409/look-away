@@ -7,6 +7,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      release:
+        description: "Publish a versioned release (tag v<VERSION>) from the selected ref"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -38,6 +43,9 @@ jobs:
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
           test -f "$ZIP"
+          # Releases serve the file under its own name; `gh release create file#label`
+          # only sets a display label, so stage a copy with the stable download name.
+          cp "$ZIP" build/LookAway.app.zip
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -67,21 +75,31 @@ jobs:
           gh release view latest >/dev/null 2>&1 \
             && gh release delete latest --yes --cleanup-tag || true
           gh release create latest \
-            "$ZIP#LookAway.app.zip" \
+            "build/LookAway.app.zip" \
             --title "Latest (${VERSION})" \
             --notes "$NOTES" \
             --latest
 
-      - name: Publish versioned release (tag)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publish versioned release (tag or manual)
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="${GITHUB_REF_NAME}"
           VERSION="${{ steps.meta.outputs.version }}"
           SHA="${{ steps.meta.outputs.sha }}"
           ZIP="${{ steps.meta.outputs.zip }}"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+            TAG_ARGS=(--verify-tag)
+          else
+            # Manual release: gh creates tag v<VERSION> at the built commit.
+            TAG="v${VERSION}"
+            TAG_ARGS=(--target "$GITHUB_SHA")
+          fi
+          # Section of CHANGELOG.md for this version (between its heading and the next).
+          CHANGES="$(awk -v v="$VERSION" '$0 == "## " v {found=1; next} /^## / {found=0} found' CHANGELOG.md 2>/dev/null || true)"
           NOTES="Look Away **${TAG}**
+          ${CHANGES}
 
           **Install**
           1. Download \`LookAway.app.zip\` below
@@ -89,8 +107,17 @@ jobs:
           3. First open: right-click → **Open** if Gatekeeper blocks it
 
           Bundle version: ${VERSION} (\`${SHA}\`)."
-          gh release create "$TAG" \
-            "$ZIP#LookAway.app.zip" \
-            --title "Look Away ${TAG}" \
-            --notes "$NOTES" \
-            --verify-tag
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # Re-running a release refreshes its zip and notes instead of failing.
+            gh release upload "$TAG" build/LookAway.app.zip --clobber
+            gh release view "$TAG" --json assets --jq '.assets[].name' \
+              | grep -vx 'LookAway.app.zip' \
+              | while read -r OLD; do gh release delete-asset "$TAG" "$OLD" --yes; done
+            gh release edit "$TAG" --title "Look Away ${VERSION}" --notes "$NOTES"
+          else
+            gh release create "$TAG" \
+              "build/LookAway.app.zip" \
+              --title "Look Away ${VERSION}" \
+              --notes "$NOTES" \
+              "${TAG_ARGS[@]}"
+          fi

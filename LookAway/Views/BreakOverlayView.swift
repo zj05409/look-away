@@ -13,9 +13,9 @@ struct PreBreakWarningView: View {
             Image(systemName: "bell.badge.fill")
                 .font(.system(size: 34, weight: .bold))
                 .foregroundStyle(LookAwayBrand.accent)
-            Text("即将进入强制休息")
+            Text(L10n.text("Mandatory break coming up", "即将进入强制休息"))
                 .font(.system(.title, design: .rounded, weight: .bold))
-            Text("距离休息还有 \(countdown)")
+            Text(L10n.text("Break in \(countdown)", "距离休息还有 \(countdown)"))
                 .font(.system(size: 42, weight: .bold, design: .rounded))
                 .monospacedDigit()
             Text(engine.reminderMessage)
@@ -95,11 +95,11 @@ struct BreakOverlayView: View {
                 .font(.system(size: 64, weight: .semibold))
                 .foregroundStyle(.green)
 
-            Text("休息已达标")
+            Text(L10n.text("Break complete", "休息已达标"))
                 .font(.system(.largeTitle, design: .rounded, weight: .bold))
                 .foregroundStyle(.white)
 
-            Text("准备好后，再开始下一轮工作")
+            Text(L10n.text("Start the next session when you're ready", "准备好后，再开始下一轮工作"))
                 .font(.system(.body, design: .rounded))
                 .foregroundStyle(.white.opacity(0.65))
         }
@@ -117,8 +117,8 @@ struct BreakOverlayView: View {
 
     private var skipControl: some View {
         HoldToConfirmButton(
-            title: "Skip",
-            holdingTitle: "Keep holding…",
+            title: L10n.text("Skip", "跳过"),
+            holdingTitle: L10n.text("Keep holding…", "继续按住…"),
             systemImage: "forward.end.fill",
             role: .destructive,
             centered: true,
@@ -131,7 +131,7 @@ struct BreakOverlayView: View {
 
     private var startWorkingControl: some View {
         Button(action: onStartWorking) {
-            Label("开始工作", systemImage: "play.fill")
+            Label(L10n.text("Start Working", "开始工作"), systemImage: "play.fill")
                 .font(.system(.title2, design: .rounded, weight: .bold))
                 .padding(.horizontal, 36)
                 .padding(.vertical, 18)

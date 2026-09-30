@@ -3,18 +3,18 @@
 A native macOS menu bar app that reminds you to step away from the screen on a repeating timer. When a work interval ends, a full-screen black break overlay covers all displays until the break finishes—or you end it early with deliberate friction.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Build](https://github.com/dvdcarlomagno/look-away/actions/workflows/build.yml/badge.svg)](https://github.com/dvdcarlomagno/look-away/actions/workflows/build.yml)
+[![Build](https://github.com/zj05409/look-away/actions/workflows/build.yml/badge.svg)](https://github.com/zj05409/look-away/actions/workflows/build.yml)
 
 ## Download (no build required)
 
-Every commit to `main` publishes a macOS app zip on the **[Latest release](https://github.com/dvdcarlomagno/look-away/releases/latest)**.
+Every commit to `main` publishes a macOS app zip on the **[Latest release](https://github.com/zj05409/look-away/releases/latest)**.
 
-1. Download **[LookAway.app.zip](https://github.com/dvdcarlomagno/look-away/releases/latest/download/LookAway.app.zip)**
+1. Download **[LookAway.app.zip](https://github.com/zj05409/look-away/releases/latest/download/LookAway.app.zip)**
 2. Unzip
 3. Drag `LookAway.app` into **Applications**
 4. First open: right-click → **Open** if macOS Gatekeeper blocks the unsigned build
 
-Versioned releases (tags like `v1.1.0`) keep older builds under [Releases](https://github.com/dvdcarlomagno/look-away/releases). CI also attaches the zip to each [Actions run](https://github.com/dvdcarlomagno/look-away/actions/workflows/build.yml).
+Versioned releases (tags like `v1.3.0`) keep older builds under [Releases](https://github.com/zj05409/look-away/releases). CI also attaches the zip to each [Actions run](https://github.com/zj05409/look-away/actions/workflows/build.yml).
 
 ## Features
 
@@ -28,6 +28,8 @@ Versioned releases (tags like `v1.1.0`) keep older builds under [Releases](https
 - **Launch at login** — prompted on first launch (default: enable); change later in System Settings → General → Login Items, or set `launchAtLogin` in `config.json`
 - Pre-break warning notification (optional, off by default) with **Extend 3 minutes** action in the notification and menu bar
 - Configurable reminder text shared by the pre-break notification and full-screen break overlay
+- Chinese or English UI (`language` in `config.json`: `zh`, `en`, or `auto` to follow macOS)
+- A break survives quitting, crashing, or killing the app: on relaunch the overlay returns with the remaining time (state in `~/.config/look-away/session.json`)
 - Writes a local `break-complete` event when a required break ends, so a local automation can send a phone reminder without polling the screen or calling an AI model
 - After the minimum break ends, the overlay waits for an explicit **Start Working** confirmation before starting the next work timer
 - Native Liquid Glass UI on macOS 26 via SwiftUI `glassEffect` (material fallback on older macOS / SDKs)
@@ -55,7 +57,7 @@ xcode-select --install
 Clone the repository:
 
 ```bash
-git clone git@github.com:dvdcarlomagno/look-away.git
+git clone git@github.com:zj05409/look-away.git
 cd look-away
 ```
 
@@ -66,7 +68,7 @@ Build and run:
 open build/LookAway.app
 ```
 
-This compiles with `swiftc`, wraps the binary in a `.app` bundle, generates the pink **eyes** app icon, ad-hoc signs it for local use, and writes `build/LookAway-<version>-<sha>.zip`. The build script probes the SDK and prints whether Liquid Glass is enabled.
+This compiles a universal (Apple Silicon + Intel) binary with `swiftc` (set `LOOKAWAY_ARCHS=arm64` for a faster single-arch build), wraps the binary in a `.app` bundle, generates the pink **eyes** app icon, ad-hoc signs it for local use, and writes `build/LookAway-<version>-<sha>.zip`. The build script probes the SDK and prints whether Liquid Glass is enabled.
 
 If macOS blocks the first launch, right-click the app → **Open**.
 
@@ -86,11 +88,13 @@ If macOS blocks the first launch, right-click the app → **Open**.
 3. Tag and push:
 
 ```bash
-git tag v1.1.0
-git push origin v1.1.0
+git tag v1.3.0
+git push origin v1.3.0
 ```
 
-CI builds on the tag and publishes a GitHub Release with `LookAway.app.zip`.
+CI builds on the tag and publishes a GitHub Release with `LookAway.app.zip`, using the matching section of [`CHANGELOG.md`](CHANGELOG.md) as release notes.
+
+Alternatively, run the **Build** workflow manually (Actions → Build → Run workflow) with **release** checked: CI creates tag `v<VERSION>` at the selected commit and publishes the same release.
 
 ## Build with Xcode (optional)
 
@@ -116,11 +120,12 @@ On first launch the app:
   "preBreakWarningMinutes": 0,
   "reminderMessage": "喝杯水，并且去有光照的地方慢跑五分钟，回来冷水冲脸",
   "skipPenaltyMinutes": 5,
-  "launchAtLogin": true
+  "launchAtLogin": true,
+  "language": "zh"
 }
 ```
 
-Skip-penalty state is stored separately in `~/.config/look-away/stats.json`.
+Skip-penalty state is stored separately in `~/.config/look-away/stats.json`. An in-progress break is stored in `~/.config/look-away/session.json` and removed when you start working again.
 
 Copy values from [`config.example.json`](config.example.json) if you prefer to start from the repo template.
 
@@ -134,6 +139,7 @@ Copy values from [`config.example.json`](config.example.json) if you prefer to s
 | `reminderMessage` | Chinese activity reminder | Text shown in the pre-break notification and break overlay (up to 500 characters) |
 | `skipPenaltyMinutes` | `5` | Extra minutes added to the next break after an early skip (`0` = off) |
 | `launchAtLogin` | `true` | Register app at login (also set by the first-launch prompt) |
+| `language` | `zh` | UI language: `zh` (Simplified Chinese), `en` (English), or `auto` (Chinese when macOS prefers Chinese, otherwise English) |
 
 Edit the file while the app is running—it reloads automatically. After the first-launch prompt, changing `launchAtLogin` in the file updates the login item.
 
@@ -181,6 +187,8 @@ LookAwayApp (MenuBarExtra)
 | `BreakOverlayView` | Black overlay UI — glass timer, title, skip |
 | `BreakInputShield` | Local/global event monitors for blocked shortcuts during breaks |
 | `BreakStats` / `stats.json` | Persists pending skip penalty |
+| `BreakSession` / `session.json` | Persists an in-progress break so relaunching the app restores it |
+| `L10n` | Chinese / English UI strings, selected by the `language` config key |
 | `GlassStyles` / `LookAwayDesign` | Pink accent tokens, `LookAwayGlassPanel`, liquid glass helpers |
 | `ConfigManager` | JSON persistence with file watcher for live reload |
 | `LaunchAtLoginManager` | First-launch prompt + `SMAppService` registration |
@@ -218,7 +226,7 @@ killall Dock
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, project structure, and pull request guidelines.
 
-Internal design notes live in [`knowledge/`](knowledge/INDEX.md).
+Internal design notes live in [`knowledge/`](knowledge/INDEX.md), including a [feasibility study for iPhone and Android](knowledge/mobile/feasibility.md).
 
 ## License
 
