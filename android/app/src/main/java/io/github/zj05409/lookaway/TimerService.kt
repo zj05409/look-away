@@ -88,7 +88,12 @@ class TimerService : Service() {
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_USER_PRESENT)
         }
-        registerReceiver(screenReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Screen on/off and user-present are system broadcasts, delivered to non-exported receivers.
+            registerReceiver(screenReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(screenReceiver, filter)
+        }
         receiverRegistered = true
 
         lastTickElapsed = SystemClock.elapsedRealtime()
