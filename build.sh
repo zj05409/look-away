@@ -75,7 +75,7 @@ for ARCH in $ARCHS; do
     "$ROOT/LookAway/Services/MenuBarWindowDismisser.swift" \
     "$ROOT/LookAway/Services/MenuBarWindowBackground.swift" \
     "$ROOT/LookAway/Services/BreakInputShield.swift" \
-    "$ROOT/LookAway/Services/BreakCompletionEventWriter.swift" \
+    "$ROOT/LookAway/Services/BreakEventWriter.swift" \
     "$ROOT/LookAway/Services/LaunchAtLoginManager.swift" \
     "$ROOT/LookAway/Views/MenuBarView.swift" \
     "$ROOT/LookAway/Views/MenuControls.swift" \

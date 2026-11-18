@@ -45,9 +45,24 @@ Build locally with the Android SDK: `cd android && ./gradlew assembleRelease`. C
 - Configurable reminder text shared by the pre-break notification and full-screen break overlay
 - Chinese or English UI (`language` in `config.json`: `zh`, `en`, or `auto` to follow macOS)
 - A break survives quitting, crashing, or killing the app: on relaunch the overlay returns with the remaining time (state in `~/.config/look-away/session.json`)
-- Writes a local `break-complete` event when a required break ends, so a local automation can send a phone reminder without polling the screen or calling an AI model
+- Writes [local break events](#local-break-events-macos) so an automation can send a phone reminder when a break starts or is completed
 - After the minimum break ends, the overlay waits for an explicit **Start Working** confirmation before starting the next work timer
 - Native Liquid Glass UI on macOS 26 via SwiftUI `glassEffect` (material fallback on older macOS / SDKs)
+
+## Local break events (macOS)
+
+Look Away atomically replaces these files under `~/.config/look-away/`:
+
+| File | When it changes | JSON fields |
+| --- | --- | --- |
+| `break-start.json` | A new scheduled or manually started break begins | `type: "break-start"`, `eventID`, `startedAt` |
+| `break-complete.json` | The required rest time elapses | `type: "break-complete"`, `eventID`, `completedAt` |
+
+The timestamps use UTC in ISO 8601 format. Each file holds the latest event of
+its kind; integrations should watch the directory for atomic replacements and
+use the event ID to ignore duplicate wakeups. Restoring an interrupted break
+does not publish a second start event. Skipping a break does not publish a
+completion event.
 
 ## Design
 

@@ -401,6 +401,7 @@ final class TimerEngine: ObservableObject {
     }
 
     private func beginBreak() {
+        guard !isBreakOverlayActive else { return }
         phase = .onBreak
         appliedPenaltyMinutes = pendingPenaltyMinutes
         if appliedPenaltyMinutes > 0 {
@@ -413,6 +414,7 @@ final class TimerEngine: ObservableObject {
         publishRemainingIfDisplayChanged(force: true)
         persistBreakSession()
         if tickTimer == nil { startTicking() }
+        BreakEventWriter.write(.start)
         NotificationCenter.default.post(name: .lookAwayBreakStarted, object: nil)
     }
 
@@ -423,7 +425,7 @@ final class TimerEngine: ObservableObject {
         publishRemainingIfDisplayChanged(force: true)
         persistBreakSession()
         stopTicking()
-        BreakCompletionEventWriter.write()
+        BreakEventWriter.write(.complete)
     }
 
     private func transitionToWorkingAfterBreak() {
